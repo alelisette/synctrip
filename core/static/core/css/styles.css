@@ -1,0 +1,321 @@
+/* Colores base */
+:root {
+    --azul-oscuro: #0b2a4a;
+    --azul-medio: #14558f;
+    --azul-claro: #e6f0fa;
+    --gris-fondo: #f5f5f5;
+    --texto: #111111;
+}
+
+/* Global */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--gris-fondo);
+    color: var(--texto);
+}
+
+/* NavBar */
+.navbar {
+    background: linear-gradient(90deg, var(--azul-oscuro), var(--azul-medio));
+    color: white;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+.brand a {
+    font-weight: bold;
+    font-size: 22px;
+}
+
+/* Contenido principal */
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px 24px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Titulares */
+h1, h2, h3 {
+    color: var(--azul-oscuro);
+}
+
+/* Formularios */
+form {
+    margin-top: 15px;
+}
+
+form p {
+    margin-bottom: 12px;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--azul-oscuro);
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #cccccc;
+    font-size: 14px;
+    color: var(--texto);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--azul-medio);
+    box-shadow: 0 0 0 2px rgba(20,85,143,0.15);
+}
+
+/* Botones */
+button,
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: var(--azul-medio);
+    color: white;
+    text-decoration: none;
+}
+
+button:hover,
+.btn:hover {
+    background-color: var(--azul-oscuro);
+}
+
+/* Enlaces secundarios */
+a {
+    color: var(--azul-medio);
+}
+
+a:hover {
+    color: var(--azul-oscuro);
+}
+
+/* Listas de viajes */
+ul {
+    padding-left: 18px;
+}
+
+li {
+    margin-bottom: 6px;
+}
+
+/* Tarjetas / paneles */
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+}
+
+.card-subtitle {
+    margin: 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.btn-danger {
+    background-color: #b32020;
+}
+
+.btn-danger:hover {
+    background-color: #7f1515;
+}
+
+/* Grid de viajes */
+.trip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+/* Tarjeta específica de viaje */
+.trip-card h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.trip-card h2 a {
+    text-decoration: none;
+    color: var(--azul-oscuro);
+}
+
+.trip-card h2 a:hover {
+    text-decoration: underline;
+}
+
+.trip-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* Badge de estado */
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-estado {
+    background-color: var(--azul-claro);
+    color: var(--azul-oscuro);
+}
+
+/* Textos dentro de la tarjeta */
+.trip-fechas {
+    margin: 4px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.trip-precio {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.trip-creador {
+    margin: 4px 0 12px;
+    font-size: 13px;
+    color: #666;
+}
+
+/* Botón dentro de la tarjeta */
+.trip-btn-detalle {
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+/* Layout de detalle de viaje: dos columnas */
+.trip-detail-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Columna principal */
+.trip-main {
+    flex: 2;
+}
+
+/* Columna lateral */
+.trip-sidebar {
+    flex: 1;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 16px 18px;
+}
+
+/* Responsive: en pantallas pequeñas una sola columna */
+@media (max-width: 768px) {
+    .trip-detail-layout {
+        flex-direction: column;
+    }
+}
+
+/* Buscador de participantes */
+.search-box {
+    display: flex;
+    align-items: center;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 8px 0 12px;
+    background-color: #fafafa;
+}
+
+.search-icon {
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 4px 0;
+    font-size: 14px;
+}
+
+/* Lista de participantes */
+.participantes-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.participantes-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eeeeee;
+    font-size: 14px;
+}
+
+.participantes-list li:last-child {
+    border-bottom: none;
+}
+
+.participante-correo {
+    font-size: 12px;
+    color: #666;
+}
+
+.participante-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Pill para marcar al creador */
+.pill {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pill-creador {
+    background-color: var(--azul-medio);
+    color: #fff;
+}

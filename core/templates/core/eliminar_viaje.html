@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Eliminar viaje - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Eliminar viaje</h1>
+
+<div class="card">
+    <p>¿Seguro que quieres eliminar este viaje?</p>
+    <p><strong>{{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</strong></p>
+    <p>Del {{ viaje.fecha_ida }} al {{ viaje.fecha_vuelta }}</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sí, eliminar viaje</button>
+    <a href="{% url 'core:detalle_viaje' viaje.id %}" class="btn">Cancelar</a>
+</form>
+{% endblock %}

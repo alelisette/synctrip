@@ -1,0 +1,89 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Detalle viaje - SyncTrip{% endblock %}
+
+{% block content %}
+<div class="trip-detail-layout">
+    <!-- Columna principal con info del viaje -->
+    <div class="trip-main">
+        <div class="card">
+            <div class="card-header">
+                <h1>{{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</h1>
+                <p class="card-subtitle">
+                    Del {{ viaje.fecha_ida }} al {{ viaje.fecha_vuelta }}
+                </p>
+            </div>
+            <div class="card-body">
+                <p><strong>Punto de encuentro:</strong> {{ viaje.punto_encuentro }}</p>
+                <p><strong>Precio:</strong> {{ viaje.precio }} €</p>
+                <p><strong>Estado:</strong> {{ viaje.estado }}</p>
+                <p><strong>Creador:</strong> {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }} ({{ viaje.creador.correo }})</p>
+
+                {% if es_creador %}
+                    <p>
+                        <a href="{% url 'core:editar_viaje' viaje.id %}" class="btn">Editar viaje</a>
+                    </p>
+                    <p>
+                        <a href="{% url 'core:eliminar_viaje' viaje.id %}" class="btn btn-danger">
+                            Eliminar viaje
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <p><a href="{% url 'core:lista_viajes' %}">← Volver a la lista de viajes</a></p>
+    </div>
+
+    <!-- Columna lateral con participantes y buscador -->
+    <aside class="trip-sidebar">
+        <h2>Participantes</h2>
+
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input id="search-participantes"
+                   type="text"
+                   placeholder="Buscar por nombre y apellidos...">
+        </div>
+
+    {% if participantes %}
+        <ul id="lista-participantes" class="participantes-list">
+            {% for u in participantes %}
+                <li data-name="{{ u.nombre }} {{ u.apellidos }}">
+                    <div class="participante-linea">
+                        <div>
+                            <strong>{{ u.nombre }} {{ u.apellidos }}</strong><br>
+                            <span class="participante-correo">{{ u.correo }}</span>
+                        </div>
+
+                        {% if u.id == viaje.creador.id %}
+                            <span class="pill pill-creador">Creador</span>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay participantes todavía.</p>
+    {% endif %}
+    </aside>
+</div>
+
+<!-- Buscador en cliente con JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('search-participantes');
+    const items = document.querySelectorAll('#lista-participantes li');
+
+    if (!input) return;
+
+    input.addEventListener('input', function() {
+        const q = input.value.toLowerCase().trim();
+        items.forEach(li => {
+            const name = li.dataset.name.toLowerCase();
+            li.style.display = name.includes(q) ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

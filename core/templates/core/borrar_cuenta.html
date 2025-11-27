@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+{% block title %}Borrar cuenta - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Borrar cuenta</h1>
+<p>¿Seguro que quieres borrar tu cuenta? Esta acción no se puede deshacer.</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Sí, borrar mi cuenta</button>
+    <a href="{% url 'core:perfil' %}">Cancelar</a>
+</form>
+{% endblock %}

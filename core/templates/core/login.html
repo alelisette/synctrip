@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+{% block title %}Iniciar sesión - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Iniciar sesión</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Entrar</button>
+</form>
+{% endblock %}

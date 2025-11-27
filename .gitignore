@@ -1,0 +1,26 @@
+# Entorno virtual
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django
+*.log
+staticfiles/
+media/
+
+# Base de datos local (por si algún día usas sqlite)
+db.sqlite3
+
+# VS Code
+.vscode/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Claves/API (cuando tengas un .env, NO lo subas)
+.env

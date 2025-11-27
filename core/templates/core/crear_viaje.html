@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Crear viaje - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Crear viaje</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Guardar viaje</button>
+</form>
+{% endblock %}

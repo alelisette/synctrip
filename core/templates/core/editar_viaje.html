@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Editar viaje - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Editar viaje</h1>
+
+<p><strong>Viaje:</strong> {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Guardar cambios</button>
+</form>
+
+<p><a href="{% url 'core:detalle_viaje' viaje.id %}">← Volver al viaje</a></p>
+{% endblock %}

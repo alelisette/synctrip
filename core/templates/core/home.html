@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Inicio - SyncTrip{% endblock %}
+
+{% block content %}
+    <h1>Bienvenido a SyncTrip</h1>
+    <p>Organiza y sincroniza tus viajes con tus amigos.</p>
+
+    <h2>Próximos viajes</h2>
+    {% if viajes %}
+        <ul>
+            {% for viaje in viajes %}
+                <li>
+                    {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})
+                    – {{ viaje.fecha_ida }} a {{ viaje.fecha_vuelta }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Todavía no hay viajes registrados.</p>
+    {% endif %}
+{% endblock %}

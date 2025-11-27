@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Lista de viajes - synctrip{% endblock %}
+
+{% block content %}
+<h1>Viajes disponibles</h1>
+
+{% if viajes %}
+    <div class="trip-grid">
+        {% for viaje in viajes %}
+            <div class="card trip-card">
+                <div class="trip-card-header">
+                    <h2>
+                        <a href="{% url 'core:detalle_viaje' viaje.id %}">
+                            {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})
+                        </a>
+                    </h2>
+                    <span class="badge badge-estado">
+                        {{ viaje.estado }}
+                    </span>
+                </div>
+
+                <p class="trip-fechas">
+                    {{ viaje.fecha_ida }} &rarr; {{ viaje.fecha_vuelta }}
+                </p>
+
+                <p class="trip-precio">
+                    <strong>{{ viaje.precio }} €</strong>
+                </p>
+
+                <p class="trip-creador">
+                    Creado por: {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }}
+                </p>
+
+                <a class="btn trip-btn-detalle" href="{% url 'core:detalle_viaje' viaje.id %}">
+                    Ver detalles
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No hay viajes por ahora.</p>
+{% endif %}
+{% endblock %}

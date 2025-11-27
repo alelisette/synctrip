@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+{% block title %}Mi perfil - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Mi perfil</h1>
+
+<p><strong>Correo:</strong> {{ usuario.correo }}</p>
+<p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
+<p><strong>Apellidos:</strong> {{ usuario.apellidos }}</p>
+<p><strong>Fecha de nacimiento:</strong> {{ usuario.fecha_nacimiento }}</p>
+<!-- No mostramos la contraseña -->
+
+<p>
+    <a href="{% url 'core:editar_perfil' %}">Editar perfil</a> |
+    <a href="{% url 'core:borrar_cuenta' %}">Borrar cuenta</a>
+</p>
+{% endblock %}
