@@ -3,7 +3,13 @@ from functools import wraps
 from django import forms
 from django.shortcuts import render, get_object_or_404, redirect
 
+from openai import OpenAI
+
 from .models import Viaje, Usuario
+
+client = OpenAI()  # usará OPENAI_API_KEY de tu entorno
+
+
 
 
 # ========= Helpers de sesión =========
@@ -293,3 +299,37 @@ def eliminar_viaje(request, viaje_id):
         'viaje': viaje,
     })
 
+@login_required_usuario
+def itinerario_viaje(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    # Solo el creador puede acceder al itinerario
+    if viaje.creador_id != usuario.id:
+        return redirect('core:detalle_viaje', viaje_id=viaje.id)
+
+    itinerario_texto = None
+    error_api = None
+
+    if request.method == 'POST':
+        prompt = (
+            f"Genera un itinerario detallado en español para un viaje a "
+            f"{viaje.ciudad_destino}, {viaje.pais_destino} "
+            f"desde el {viaje.fecha_ida} hasta el {viaje.fecha_vuelta}. "
+            f"Organiza el contenido por días y con viñetas."
+        )
+        try:
+            resp = client.responses.create(
+                model="gpt-4.1-mini",
+                input=prompt,
+            )
+            itinerario_texto = resp.output[0].content[0].text
+        except Exception as e:
+            error_api = str(e)
+
+    return render(request, 'core/itinerario_viaje.html', {
+        'usuario_actual': usuario,
+        'viaje': viaje,
+        'itinerario_texto': itinerario_texto,
+        'error_api': error_api,
+    })

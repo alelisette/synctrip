@@ -18,6 +18,7 @@ urlpatterns = [
     path('viajes/nuevo/', views.crear_viaje, name='crear_viaje'),
     path('viajes/<int:viaje_id>/editar/', views.editar_viaje, name='editar_viaje'),
     path('viajes/<int:viaje_id>/eliminar/', views.eliminar_viaje, name='eliminar_viaje'),
+    path('viajes/<int:viaje_id>/itinerario/', views.itinerario_viaje, name='itinerario_viaje'),  # <--- NUEVO
     path('viajes/', views.lista_viajes, name='lista_viajes'),
     path('viajes/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
 ]

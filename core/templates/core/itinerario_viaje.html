@@ -1,0 +1,38 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Itinerario - SyncTrip{% endblock %}
+
+{% block content %}
+<h1>Itinerario para {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</h1>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Fechas:</strong> {{ viaje.fecha_ida }} → {{ viaje.fecha_vuelta }}</p>
+        <p><strong>Punto de encuentro:</strong> {{ viaje.punto_encuentro }}</p>
+    </div>
+</div>
+
+<form method="post" style="margin-top: 15px;">
+    {% csrf_token %}
+    <button type="submit" class="btn">Generar itinerario con IA</button>
+</form>
+
+{% if error_api %}
+    <p style="color: red; margin-top: 15px;">
+        Error al llamar a la API: {{ error_api }}
+    </p>
+{% endif %}
+
+{% if itinerario_texto %}
+    <h2 style="margin-top: 20px;">Itinerario generado</h2>
+    <div class="card">
+        <div class="card-body">
+            <pre style="white-space: pre-wrap;">{{ itinerario_texto }}</pre>
+        </div>
+    </div>
+{% endif %}
+
+<p style="margin-top: 15px;">
+    <a href="{% url 'core:detalle_viaje' viaje.id %}">← Volver al viaje</a>
+</p>
+{% endblock %}

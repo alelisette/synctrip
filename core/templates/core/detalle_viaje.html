@@ -24,11 +24,15 @@
                         <a href="{% url 'core:editar_viaje' viaje.id %}" class="btn">Editar viaje</a>
                     </p>
                     <p>
+                        <a href="{% url 'core:itinerario_viaje' viaje.id %}" class="btn">Asistente de itinerario</a>
+                    </p>
+                    <p>
                         <a href="{% url 'core:eliminar_viaje' viaje.id %}" class="btn btn-danger">
                             Eliminar viaje
                         </a>
                     </p>
                 {% endif %}
+
             </div>
         </div>
 
