@@ -21,6 +21,11 @@ urlpatterns = [
     path('viajes/<int:viaje_id>/itinerario/', views.itinerario_viaje, name='itinerario_viaje'),  # <--- NUEVO
     path('viajes/', views.lista_viajes, name='lista_viajes'),
     path('viajes/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
+    path('viajes/<int:viaje_id>/chat/', views.chat_viaje_api, name='chat_viaje_api'),
+    path('viajes/<int:viaje_id>/chat/historial/', views.chat_viaje_historial, name='chat_viaje_historial'),
+
 ]
+
+
 
 

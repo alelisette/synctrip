@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 
 {% block title %}Detalle viaje - SyncTrip{% endblock %}
-
+{% load static %}
 {% block content %}
 <div class="trip-detail-layout">
     <!-- Columna principal con info del viaje -->
@@ -22,9 +22,6 @@
                 {% if es_creador %}
                     <p>
                         <a href="{% url 'core:editar_viaje' viaje.id %}" class="btn">Editar viaje</a>
-                    </p>
-                    <p>
-                        <a href="{% url 'core:itinerario_viaje' viaje.id %}" class="btn">Asistente de itinerario</a>
                     </p>
                     <p>
                         <a href="{% url 'core:eliminar_viaje' viaje.id %}" class="btn btn-danger">
@@ -73,21 +70,50 @@
     </aside>
 </div>
 
-<!-- Buscador en cliente con JavaScript -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const input = document.getElementById('search-participantes');
-    const items = document.querySelectorAll('#lista-participantes li');
+<!-- Estilos específicos para el detalle del viaje -->
+ {% if es_creador %}
+<!-- Pestaña lateral -->
+ <script src="{% static 'core/js/syncbot.js' %}"></script>
+<button id="syncbot-tab"
+        class="syncbot-tab"
+        aria-label="Abrir SyncBot"
+        data-chat-url="{% url 'core:chat_viaje_api' viaje.id %}"
+        data-history-url="{% url 'core:chat_viaje_historial' viaje.id %}">
+  <span class="syncbot-tab-icon">🤖</span>
+  <span class="syncbot-tab-text">SyncBot</span>
+</button>
 
-    if (!input) return;
+<!-- Panel lateral -->
+<div id="syncbot-drawer" class="syncbot-drawer" aria-hidden="true">
+<div class="syncbot-header">
+  <div class="syncbot-title">
+    <div class="syncbot-avatar">🤖</div>
+    <div>
+      <div class="syncbot-name">SyncBot</div>
+      <div class="syncbot-sub">
+        Asistente del viaje
+      </div>
+    </div>
+  </div>
+  <button id="syncbot-close" class="syncbot-close" aria-label="Cerrar">✕</button>
+</div>
 
-    input.addEventListener('input', function() {
-        const q = input.value.toLowerCase().trim();
-        items.forEach(li => {
-            const name = li.dataset.name.toLowerCase();
-            li.style.display = name.includes(q) ? '' : 'none';
-        });
-    });
-});
-</script>
+
+  <div id="syncbot-messages" class="syncbot-messages">
+    <div class="syncbot-bubble bot">
+      Hola 👋 Soy SyncBot. Pregúntame por itinerario, transporte, comida o actividades para este viaje.
+    </div>
+  </div>
+
+  <div class="syncbot-input">
+    <input id="syncbot-text" type="text" placeholder="Escribe tu mensaje…" />
+    <button id="syncbot-send" class="syncbot-send" type="button">➤</button>
+  </div>
+</div>
+<!-- Fondo oscuro cuando está abierto -->
+<div id="syncbot-backdrop" class="syncbot-backdrop" hidden></div>
+{% endif %}
+
+<script src="{% static 'core/js/participants_search.js' %}"></script>
+
 {% endblock %}

@@ -2,14 +2,16 @@ from functools import wraps
 
 from django import forms
 from django.shortcuts import render, get_object_or_404, redirect
-
+from .models import Viaje, Usuario
 from openai import OpenAI
 
-from .models import Viaje, Usuario
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST, require_GET
+from openai import OpenAI
 
-client = OpenAI()  # usará OPENAI_API_KEY de tu entorno
+from .models import ChatMessage  
 
-
+client = OpenAI()  # usará OPENAI_API_KEY del entorno virtual
 
 
 # ========= Helpers de sesión =========
@@ -67,8 +69,6 @@ def detalle_viaje(request, viaje_id):
         'usuario_actual': usuario_actual,
         'es_creador': es_creador,
     })
-
-
 
 # ========= FORMULARIOS DE USUARIO =========
 
@@ -333,3 +333,86 @@ def itinerario_viaje(request, viaje_id):
         'itinerario_texto': itinerario_texto,
         'error_api': error_api,
     })
+
+
+import json
+from .models import Viaje, Usuario, ChatMessage
+
+MAX_ULTIMOS_MENSAJES = 10     # 10 mensajes (5 user + 5 assistant)
+
+@require_POST
+@login_required_usuario
+def chat_viaje_api(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if viaje.creador_id != usuario.id:
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        user_text = (data.get("message") or "").strip()
+    except Exception:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    if not user_text:
+        return JsonResponse({"error": "Mensaje vacío"}, status=400)
+
+    ChatMessage.objects.create(viaje=viaje, role="user", content=user_text)
+
+    system_prompt = f"""
+    Eres SyncBot, el asistente del viaje en SyncTrip.
+    Tu objetivo es ayudar a planificar y ajustar el itinerario del viaje.
+
+    REGLAS DE RESPUESTA (OBLIGATORIAS):
+    - Sé conciso: máximo 10 viñetas por respuesta.
+    - Si el usuario pide un itinerario, devuélvelo estructurado por días.
+    - Si falta información, haz SOLO 1 pregunta.
+    - Evita datos demasiado exactos si no estás seguro.
+
+    CONTEXTO DEL VIAJE:
+    - Destino: {viaje.ciudad_destino}, {viaje.pais_destino}
+    - Fechas: {viaje.fecha_ida} a {viaje.fecha_vuelta}
+    - Punto de encuentro: {viaje.punto_encuentro}
+    - Precio: {viaje.precio} €
+    """.strip()
+
+    history = list(
+        ChatMessage.objects.filter(viaje=viaje)
+        .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES]
+    )
+    history.reverse()
+
+    conversation = [f"SYSTEM: {system_prompt}"]
+    for m in history:
+        role = "USER" if m.role == "user" else "ASSISTANT"
+        conversation.append(f"{role}: {m.content}")
+    conversation.append("ASSISTANT:")
+    prompt = "\n\n".join(conversation)
+
+    try:
+        resp = client.responses.create(
+            model="gpt-4.1-mini",
+            input=prompt,
+            max_output_tokens=450,
+        )
+        assistant_text = resp.output[0].content[0].text.strip()
+    except Exception as e:
+        return JsonResponse({"error": f"Error OpenAI: {str(e)}"}, status=500)
+
+    ChatMessage.objects.create(viaje=viaje, role="assistant", content=assistant_text)
+    return JsonResponse({"reply": assistant_text})
+
+
+@require_GET
+@login_required_usuario
+def chat_viaje_historial(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if viaje.creador_id != usuario.id:
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50]
+    data = [{"role": m.role, "content": m.content} for m in msgs]
+    return JsonResponse({"messages": data})

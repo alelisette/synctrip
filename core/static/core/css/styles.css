@@ -45,14 +45,28 @@ body {
     font-size: 22px;
 }
 
-/* Contenido principal */
-.container {
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 20px 24px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.container{
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+
+/*layout del detalle aproveche el espacio*/
+.trip-detail-layout{
+  width: 100%;
+  gap: 24px;
+}
+
+.trip-main{
+  flex: 2;
+  min-width: 520px;
+}
+
+.trip-sidebar{
+  flex: 1;
+  min-width: 320px;
 }
 
 /* Titulares */
@@ -319,3 +333,207 @@ li {
     background-color: var(--azul-medio);
     color: #fff;
 }
+
+
+
+/* Estilos para el chat */
+/* Chat tab (pestaña pequeña a la izquierda) */
+
+/* ===== SyncBot (pestaña + drawer lateral) ===== */
+
+.syncbot-tab{
+  position: fixed;
+  right: 18px;
+  bottom: 80px;
+  left: auto;
+  top: auto;
+  transform: none;
+
+  background: var(--azul-oscuro);
+  color: #fff;
+  border: 0;
+  border-radius: 20px;
+  padding: 15px 15px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  z-index: 9999;
+}
+
+
+.syncbot-tab:hover{
+  filter: brightness(1.05);
+}
+
+.syncbot-tab-icon{
+  font-size: 16px;
+}
+
+.syncbot-tab-text{
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Fondo oscuro */
+.syncbot-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  z-index: 9998;
+}
+
+/* Drawer */
+.syncbot-drawer{
+  position: fixed;
+  right: 18px;
+  bottom: 74px;      /* queda justo encima del botón */
+  left: auto;
+  top: auto;
+
+  width: 360px;
+  max-width: calc(100vw - 36px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+
+  background: #fff;
+  box-shadow: 10px 0 30px rgba(0,0,0,.18);
+  border-radius: 14px;
+
+  transform: translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+
+  transition: transform .18s ease, opacity .18s ease;
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.syncbot-drawer.open{
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+.syncbot-header{
+  padding: 14px 14px;
+  background: linear-gradient(90deg, var(--azul-oscuro), var(--azul-medio));
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.syncbot-title{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.syncbot-avatar{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.18);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.syncbot-name{
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.syncbot-sub{
+  font-size: 12px;
+  opacity: .9;
+}
+
+.syncbot-close{
+  display: grid;
+  place-items: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  line-height: 1;
+
+  background: rgba(255,255,255,.18);
+  border: 0;
+  color: #fff;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.syncbot-messages{
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  background: #f6f7f9;
+}
+
+.syncbot-bubble{
+  max-width: 86%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.syncbot-bubble.user{
+  margin-left: auto;
+  background: var(--azul-claro);
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+.syncbot-bubble.bot{
+  margin-right: auto;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.syncbot-input{
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid #e9e9e9;
+  background: #fff;
+}
+
+.syncbot-input input{
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #d7d7d7;
+  outline: none;
+}
+
+.syncbot-send{
+  width: 44px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--azul-oscuro);
+  color: #fff;
+  cursor: pointer;
+}
+
+.syncbot-send:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.syncbot-bubble.typing{
+  opacity: 0.75;
+  font-style: italic;
+}
+
