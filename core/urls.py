@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from django.views.generic import RedirectView
+from django.templatetags.static import static
 
 app_name = 'core'  # para usar namespaced URLs
 
@@ -22,6 +24,7 @@ urlpatterns = [
     path('viajes/', views.lista_viajes, name='lista_viajes'),
     path('viajes/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
     path('viajes/<int:viaje_id>/chat/', views.chat_viaje_api, name='chat_viaje_api'),
+    path("favicon.ico", RedirectView.as_view(url=static("favicon.ico"))),
     path('viajes/<int:viaje_id>/chat/historial/', views.chat_viaje_historial, name='chat_viaje_historial'),
 
 ]
