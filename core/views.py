@@ -334,7 +334,6 @@ def itinerario_viaje(request, viaje_id):
         'error_api': error_api,
     })
 
-
 import json
 from .models import Viaje, Usuario, ChatMessage
 
@@ -379,8 +378,12 @@ def chat_viaje_api(request, viaje_id):
 
     history = list(
         ChatMessage.objects.filter(viaje=viaje)
-        .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES]
+        .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES] #10 mensajes para el contexto
     )
+    print("MAX_ULTIMOS_MENSAJES =", MAX_ULTIMOS_MENSAJES)
+    print("Mensajes recuperados =", len(history))
+    print("IDs recuperados =", [m.id for m in history])
+
     history.reverse()
 
     conversation = [f"SYSTEM: {system_prompt}"]
@@ -395,14 +398,18 @@ def chat_viaje_api(request, viaje_id):
             model="gpt-4.1-mini",
             input=prompt,
             max_output_tokens=450,
+            temperature=0.1,
         )
+        #extraer el texto de la respuesta
         assistant_text = resp.output[0].content[0].text.strip()
     except Exception as e:
         return JsonResponse({"error": f"Error OpenAI: {str(e)}"}, status=500)
 
     ChatMessage.objects.create(viaje=viaje, role="assistant", content=assistant_text)
-    return JsonResponse({"reply": assistant_text})
-
+    return JsonResponse({
+        "reply": assistant_text,
+        "usage": resp.usage if hasattr(resp, "usage") else None
+    })
 
 @require_GET
 @login_required_usuario
@@ -413,6 +420,6 @@ def chat_viaje_historial(request, viaje_id):
     if viaje.creador_id != usuario.id:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
-    msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50]
+    msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50] #interfaz 50 mensajes
     data = [{"role": m.role, "content": m.content} for m in msgs]
     return JsonResponse({"messages": data})

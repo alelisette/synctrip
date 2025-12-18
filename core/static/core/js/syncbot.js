@@ -104,9 +104,9 @@
 
   sendBtn.disabled = true;
 
-  // ✅ burbuja “Escribiendo…” al final del chat
+  //burbuja “Escribiendo…” al final del chat
   const typingBubble = addBubble("Escribiendo…", "bot");
-  typingBubble.classList.add("typing"); // opcional para estilo
+  typingBubble.classList.add("typing"); 
 
   try {
     const res = await fetch(chatUrl, {
@@ -120,7 +120,6 @@
 
     const data = await res.json();
 
-    // ✅ quitamos la burbuja “Escribiendo…”
     typingBubble.remove();
 
     if (!res.ok) {
