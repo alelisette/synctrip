@@ -334,31 +334,43 @@ def itinerario_viaje(request, viaje_id):
         'error_api': error_api,
     })
 
+# Importa el módulo estándar para parsear/generar JSON
 import json
+# Importa modelos de tu app (tablas/entidades de BD de Django)
 from .models import Viaje, Usuario, ChatMessage
 
+# Número máximo de mensajes recientes que se enviarán como contexto al modelo
 MAX_ULTIMOS_MENSAJES = 10     # 10 mensajes (5 user + 5 assistant)
 
 @require_POST
 @login_required_usuario
 def chat_viaje_api(request, viaje_id):
     usuario = get_usuario_actual(request)
+    # Busca el Viaje por id; si no existe, devuelve 404 automáticamente
     viaje = get_object_or_404(Viaje, id=viaje_id)
 
     if viaje.creador_id != usuario.id:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
+    # Intenta leer el body como JSON y extraer el texto del usuario
     try:
+        # Decodifica bytes -> string UTF-8 y parsea a dict
         data = json.loads(request.body.decode("utf-8"))
+        # Extrae "message"; si no existe o es None, usa "", y recorta espacios
         user_text = (data.get("message") or "").strip()
     except Exception:
+        # Si el body no es JSON válido (o falla decode), responde 400 Bad Request
         return JsonResponse({"error": "JSON inválido"}, status=400)
 
+    # Valida que el mensaje no esté vacío tras hacer strip()
     if not user_text:
+        # Si está vacío, responde 400 Bad Request
         return JsonResponse({"error": "Mensaje vacío"}, status=400)
 
+    # Guarda el mensaje del usuario en la BD asociado al viaje
     ChatMessage.objects.create(viaje=viaje, role="user", content=user_text)
 
+    # Construye el prompt de sistema: identidad del bot + reglas + contexto del viaje
     system_prompt = f"""
     Eres SyncBot, el asistente del viaje en SyncTrip.
     Tu objetivo es ayudar a planificar y ajustar el itinerario del viaje.
@@ -374,40 +386,57 @@ def chat_viaje_api(request, viaje_id):
     - Fechas: {viaje.fecha_ida} a {viaje.fecha_vuelta}
     - Punto de encuentro: {viaje.punto_encuentro}
     - Precio: {viaje.precio} €
-    """.strip()
+    """.strip()  # strip() elimina saltos/espacios al inicio y al final
 
+    # Recupera los últimos N mensajes del chat de ese viaje 
     history = list(
+        # Filtra por viaje (solo mensajes de este chat)
         ChatMessage.objects.filter(viaje=viaje)
+        # Ordena por fecha de creación descendente 
         .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES]
     )
+    # Debug: muestra la configuración de mensajes máximos
     print("MAX_ULTIMOS_MENSAJES =", MAX_ULTIMOS_MENSAJES)
+    # Debug: cuántos mensajes se han recuperado realmente
     print("Mensajes recuperados =", len(history))
+    # Debug: IDs de los mensajes recuperados (para verificar orden/selección)
     print("IDs recuperados =", [m.id for m in history])
 
+    # Como se recuperaron en orden inverso (descendente), se invierte 
     history.reverse()
 
+    # Inicia el “transcript” con el bloque SYSTEM (instrucciones + contexto)
     conversation = [f"SYSTEM: {system_prompt}"]
+    # Recorre mensajes previos para construir el prompt con roles y contenido
     for m in history:
         role = "USER" if m.role == "user" else "ASSISTANT"
+        # Añade el mensaje al transcript
         conversation.append(f"{role}: {m.content}")
+    # Añade el marcador final para que el modelo continúe como el asistente
     conversation.append("ASSISTANT:")
+    # Une todo en un string, separando bloques con líneas en blanco
     prompt = "\n\n".join(conversation)
 
     try:
+        # Crea una respuesta con el modelo indicado
         resp = client.responses.create(
+            # Modelo IA a usar
             model="gpt-4.1-mini",
             input=prompt,
+            # Límite de tokens de salida (controla longitud)
             max_output_tokens=450,
+            # Baja temperatura = más consistente
             temperature=0.1,
         )
-        #extraer el texto de la respuesta
+        # extraer el texto de la respuesta
         assistant_text = resp.output[0].content[0].text.strip()
     except Exception as e:
         return JsonResponse({"error": f"Error OpenAI: {str(e)}"}, status=500)
-
+    
+    # Guarda la respuesta del asistente en BD asociada al mismo viaje
     ChatMessage.objects.create(viaje=viaje, role="assistant", content=assistant_text)
+    # Devuelve la respuesta al frontend en JSON
     return JsonResponse({"reply": assistant_text})
-
 
 @require_GET
 @login_required_usuario
@@ -418,6 +447,9 @@ def chat_viaje_historial(request, viaje_id):
     if viaje.creador_id != usuario.id:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
+    # Recupera hasta 50 mensajes del viaje en orden cronológico 
     msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50]
+    # Serializa cada mensaje a un dict simple {role, content}
     data = [{"role": m.role, "content": m.content} for m in msgs]
+    # Devuelve la lista como JSON
     return JsonResponse({"messages": data})
