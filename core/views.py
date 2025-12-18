@@ -378,7 +378,7 @@ def chat_viaje_api(request, viaje_id):
 
     history = list(
         ChatMessage.objects.filter(viaje=viaje)
-        .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES] #10 mensajes para el contexto
+        .order_by("-created_at")[:MAX_ULTIMOS_MENSAJES]
     )
     print("MAX_ULTIMOS_MENSAJES =", MAX_ULTIMOS_MENSAJES)
     print("Mensajes recuperados =", len(history))
@@ -406,10 +406,8 @@ def chat_viaje_api(request, viaje_id):
         return JsonResponse({"error": f"Error OpenAI: {str(e)}"}, status=500)
 
     ChatMessage.objects.create(viaje=viaje, role="assistant", content=assistant_text)
-    return JsonResponse({
-        "reply": assistant_text,
-        "usage": resp.usage if hasattr(resp, "usage") else None
-    })
+    return JsonResponse({"reply": assistant_text})
+
 
 @require_GET
 @login_required_usuario
@@ -420,6 +418,6 @@ def chat_viaje_historial(request, viaje_id):
     if viaje.creador_id != usuario.id:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
-    msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50] #interfaz 50 mensajes
+    msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50]
     data = [{"role": m.role, "content": m.content} for m in msgs]
     return JsonResponse({"messages": data})
