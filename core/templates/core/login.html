@@ -5,8 +5,22 @@
 <h1>Iniciar sesión</h1>
 
 <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn">Entrar</button>
+  {% csrf_token %}
+
+  {{ form.non_field_errors }}
+
+  <p>
+    {{ form.identificador.label_tag }}
+    {{ form.identificador }}
+    {{ form.identificador.errors }}
+  </p>
+
+  <p>
+    {{ form.contraseña.label_tag }}
+    {{ form.contraseña }}
+    {{ form.contraseña.errors }}
+  </p>
+
+  <button type="submit" class="btn">Entrar</button>
 </form>
 {% endblock %}

@@ -3,11 +3,19 @@ from functools import wraps
 from django import forms
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Viaje, Usuario
-from openai import OpenAI
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from openai import OpenAI
+
+from .models import Usuario, SolicitudAmistad
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.db import models
+from django.db.models import Q
+
+from .models import InvitacionViaje
+from .models import SolicitudAmistad, InvitacionViaje
 
 from .models import ChatMessage  
 
@@ -87,34 +95,32 @@ class UsuarioCreateForm(forms.ModelForm):
         fields = ['correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
 
 
-class UsuarioUpdateForm(forms.ModelForm):
+
+class UsuarioCreateForm(forms.ModelForm):
+    contraseña = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput
+    )
     fecha_nacimiento = forms.DateField(
         label='Fecha de nacimiento',
         widget=forms.DateInput(attrs={'type': 'date'})
     )
 
-    nueva_contraseña = forms.CharField(
-        label='Nueva contraseña',
-        widget=forms.PasswordInput,
-        required=False,
-        help_text='Déjalo en blanco para mantener la contraseña actual.'
-    )
-
     class Meta:
         model = Usuario
-        fields = ['correo', 'nombre', 'apellidos', 'fecha_nacimiento']
+        fields = ['username', 'correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
 
-    def clean_correo(self):
-        correo = self.cleaned_data['correo']
-        qs = Usuario.objects.filter(correo=correo).exclude(id=self.instance.id)
-        if qs.exists():
-            raise forms.ValidationError("Ya existe un usuario con este correo electrónico.")
-        return correo
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if Usuario.objects.filter(username=username).exists():
+            raise forms.ValidationError("Ese username ya está en uso.")
+        return username
 
 
 class LoginForm(forms.Form):
-    correo = forms.EmailField(label='Correo electrónico')
-    contraseña = forms.CharField(widget=forms.PasswordInput, label='Contraseña')
+    identificador = forms.CharField(label="Correo o username")  # <-- campo único
+    contraseña = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
+
 
 
 # ========= VISTAS DE USUARIO =========
@@ -125,8 +131,7 @@ def registro(request):
         form = UsuarioCreateForm(request.POST)
         if form.is_valid():
             usuario = form.save()
-            # login automático
-            request.session['usuario_id'] = usuario.id
+            request.session['usuario_id'] = usuario.id  # login automático
             return redirect('core:home')
     else:
         form = UsuarioCreateForm()
@@ -137,6 +142,27 @@ def registro(request):
     })
 
 
+class UsuarioCreateForm(forms.ModelForm):
+    contraseña = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput
+    )
+    fecha_nacimiento = forms.DateField(
+        label='Fecha de nacimiento',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
+    class Meta:
+        model = Usuario
+        fields = ['username', 'correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if Usuario.objects.filter(username=username).exists():
+            raise forms.ValidationError("Ese username ya está en uso.")
+        return username
+
+
 def login_view(request):
     usuario_actual = get_usuario_actual(request)
     if usuario_actual:
@@ -144,15 +170,21 @@ def login_view(request):
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
+
+        # ✅ PRIMERO validar el form
         if form.is_valid():
-            correo = form.cleaned_data['correo']
+            identificador = form.cleaned_data['identificador'].strip()
             contraseña = form.cleaned_data['contraseña']
+
             try:
-                usuario = Usuario.objects.get(correo=correo, contraseña=contraseña)
+                usuario = Usuario.objects.get(
+                    (Q(correo=identificador) | Q(username=identificador)) &
+                    Q(contraseña=contraseña)
+                )
                 request.session['usuario_id'] = usuario.id
                 return redirect('core:home')
             except Usuario.DoesNotExist:
-                form.add_error(None, "Correo o contraseña incorrectos.")
+                form.add_error(None, "Credenciales incorrectas.")
     else:
         form = LoginForm()
 
@@ -162,18 +194,50 @@ def login_view(request):
     })
 
 
+
+
 def logout_view(request):
     request.session.flush()
     return redirect('core:home')
 
 
+from .models import SolicitudAmistad
+
+
 @login_required_usuario
 def perfil(request):
     usuario = get_usuario_actual(request)
-    return render(request, 'core/perfil.html', {
-        'usuario_actual': usuario,
-        'usuario': usuario,
+
+    solicitudes_recibidas = (
+        SolicitudAmistad.objects
+        .filter(receptor=usuario, estado=SolicitudAmistad.Estado.PENDIENTE)
+        .select_related("emisor")
+        .order_by("-created_at")
+    )
+
+    solicitudes_enviadas = (
+        SolicitudAmistad.objects
+        .filter(emisor=usuario)
+        .select_related("receptor")
+        .order_by("-created_at")[:10]
+    )
+
+    # ✅ Invitaciones a viajes pendientes (para viajes privados)
+    invitaciones_viaje = (
+        InvitacionViaje.objects
+        .filter(receptor=usuario, estado=InvitacionViaje.Estado.PENDIENTE)
+        .select_related("emisor", "viaje")
+        .order_by("-created_at")
+    )
+
+    return render(request, "core/perfil.html", {
+        "usuario_actual": usuario,
+        "usuario": usuario,
+        "solicitudes_recibidas": solicitudes_recibidas,
+        "solicitudes_enviadas": solicitudes_enviadas,
+        "invitaciones_viaje": invitaciones_viaje,  # lo nuevo
     })
+
 
 
 @login_required_usuario
@@ -208,7 +272,6 @@ def borrar_cuenta(request):
         'usuario_actual': usuario,
     })
 
-
 # ---------- FORMULARIO DE VIAJE ----------
 
 class ViajeCreateForm(forms.ModelForm):
@@ -224,14 +287,18 @@ class ViajeCreateForm(forms.ModelForm):
     class Meta:
         model = Viaje
         fields = [
+            'ciudad_origen',
+            'pais_origen',
             'ciudad_destino',
             'pais_destino',
             'fecha_ida',
             'fecha_vuelta',
-            'punto_encuentro',
-            'precio',
-            'estado',
+            'direccion_encuentro',
+            'precio_persona',
+            'estado_viaje',
+            'visibilidad',
         ]
+
 
 @login_required_usuario
 def crear_viaje(request):
@@ -382,10 +449,11 @@ def chat_viaje_api(request, viaje_id):
     - Evita datos demasiado exactos si no estás seguro.
 
     CONTEXTO DEL VIAJE:
+    - Dirección de encuentro: {viaje.direccion_encuentro}
+    - Precio por persona: {viaje.precio_persona} €
+    - Origen: {viaje.ciudad_origen}, {viaje.pais_origen}
     - Destino: {viaje.ciudad_destino}, {viaje.pais_destino}
     - Fechas: {viaje.fecha_ida} a {viaje.fecha_vuelta}
-    - Punto de encuentro: {viaje.punto_encuentro}
-    - Precio: {viaje.precio} €
     """.strip()  # strip() elimina saltos/espacios al inicio y al final
 
     # Recupera los últimos N mensajes del chat de ese viaje 
@@ -404,7 +472,6 @@ def chat_viaje_api(request, viaje_id):
 
     # Como se recuperaron en orden inverso (descendente), se invierte 
     history.reverse()
-
     # Inicia el “transcript” con el bloque SYSTEM (instrucciones + contexto)
     conversation = [f"SYSTEM: {system_prompt}"]
     # Recorre mensajes previos para construir el prompt con roles y contenido
@@ -443,13 +510,195 @@ def chat_viaje_api(request, viaje_id):
 def chat_viaje_historial(request, viaje_id):
     usuario = get_usuario_actual(request)
     viaje = get_object_or_404(Viaje, id=viaje_id)
-
     if viaje.creador_id != usuario.id:
         return JsonResponse({"error": "No autorizado"}, status=403)
-
     # Recupera hasta 50 mensajes del viaje en orden cronológico 
     msgs = ChatMessage.objects.filter(viaje=viaje).order_by("created_at")[:50]
     # Serializa cada mensaje a un dict simple {role, content}
     data = [{"role": m.role, "content": m.content} for m in msgs]
     # Devuelve la lista como JSON
     return JsonResponse({"messages": data})
+
+# ========= VISTAS DE AMISTAD =========
+
+@require_POST
+@login_required_usuario
+def enviar_solicitud(request):
+    usuario = get_usuario_actual(request)
+
+    # OJO: el name del input en el HTML es "username_destino"
+    username_destino = (request.POST.get("username_destino") or "").strip()
+
+    if not username_destino:
+        messages.error(request, "Debes escribir un username.")
+        return redirect("core:perfil")
+
+    try:
+        receptor = Usuario.objects.get(username=username_destino)
+    except Usuario.DoesNotExist:
+        messages.error(request, "No existe ningún usuario con ese username.")
+        return redirect("core:perfil")
+
+    if receptor.id == usuario.id:
+        messages.error(request, "No puedes enviarte una solicitud a ti mismo.")
+        return redirect("core:perfil")
+
+    obj, created = SolicitudAmistad.objects.get_or_create(
+        emisor=usuario,
+        receptor=receptor,
+        defaults={"estado": SolicitudAmistad.Estado.PENDIENTE}
+    )
+
+    if not created:
+        messages.info(request, f"Ya existe una solicitud hacia @{receptor.username} ({obj.get_estado_display()}).")
+    else:
+        messages.success(request, f"Solicitud enviada a @{receptor.username}.")
+
+    return redirect("core:perfil")
+
+
+@require_POST
+@login_required_usuario
+def aceptar_solicitud(request, solicitud_id):
+    usuario = get_usuario_actual(request)
+    sol = get_object_or_404(SolicitudAmistad, id=solicitud_id)
+
+    # Solo el receptor puede aceptar
+    if sol.receptor_id != usuario.id:
+        return redirect("core:perfil")
+
+    if sol.estado != SolicitudAmistad.Estado.PENDIENTE:
+        return redirect("core:perfil")
+
+    sol.estado = SolicitudAmistad.Estado.ACEPTADA
+    sol.save()
+    messages.success(request, f"Has aceptado a @{sol.emisor.username}.")
+    return redirect("core:perfil")
+
+
+@require_POST
+@login_required_usuario
+def finalizar_solicitud(request, solicitud_id):
+    usuario = get_usuario_actual(request)
+    sol = get_object_or_404(SolicitudAmistad, id=solicitud_id)
+
+    # Solo emisor o receptor pueden finalizar/rechazar/cancelar
+    if sol.emisor_id != usuario.id and sol.receptor_id != usuario.id:
+        return redirect("core:perfil")
+
+    sol.estado = SolicitudAmistad.Estado.FINALIZADA
+    sol.save()
+    messages.info(request, "Solicitud finalizada.")
+    return redirect("core:perfil")
+
+from django.views.decorators.http import require_POST
+
+@require_POST
+@login_required_usuario
+def invitar_a_viaje(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    # Solo creador y solo si es privado
+    if viaje.creador_id != usuario.id:
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+    if viaje.visibilidad != Viaje.Visibilidad.PRIVADO:
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    username_destino = (request.POST.get("username_destino") or "").strip()
+
+    if not username_destino:
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    try:
+        receptor = Usuario.objects.get(username=username_destino)
+    except Usuario.DoesNotExist:
+        return render(request, "core/detalle_viaje.html", {
+            "viaje": viaje,
+            "participantes": viaje.participantes.all(),
+            "usuario_actual": usuario,
+            "es_creador": True,
+            "invite_error": "No existe ningún usuario con ese username."
+        })
+
+    if receptor.id == usuario.id:
+        return render(request, "core/detalle_viaje.html", {
+            "viaje": viaje,
+            "participantes": viaje.participantes.all(),
+            "usuario_actual": usuario,
+            "es_creador": True,
+            "invite_error": "No puedes invitarte a ti misma."
+        })
+
+    # Si ya es participante
+    if viaje.participantes.filter(id=receptor.id).exists():
+        return render(request, "core/detalle_viaje.html", {
+            "viaje": viaje,
+            "participantes": viaje.participantes.all(),
+            "usuario_actual": usuario,
+            "es_creador": True,
+            "invite_error": "Ese usuario ya está en el viaje."
+        })
+
+    # Crear invitación (si ya existe, no duplicar)
+    invitacion, created = InvitacionViaje.objects.get_or_create(
+        viaje=viaje,
+        receptor=receptor,
+        defaults={"emisor": usuario, "estado": InvitacionViaje.Estado.PENDIENTE}
+    )
+
+    if not created:
+        return render(request, "core/detalle_viaje.html", {
+            "viaje": viaje,
+            "participantes": viaje.participantes.all(),
+            "usuario_actual": usuario,
+            "es_creador": True,
+            "invite_error": f"Ya existe una invitación ({invitacion.estado})."
+        })
+
+    return render(request, "core/detalle_viaje.html", {
+        "viaje": viaje,
+        "participantes": viaje.participantes.all(),
+        "usuario_actual": usuario,
+        "es_creador": True,
+        "invite_success": f"Invitación enviada a @{receptor.username}."
+    })
+
+
+@require_POST
+@login_required_usuario
+def aceptar_invitacion(request, inv_id):
+    usuario = get_usuario_actual(request)
+    invitacion = get_object_or_404(InvitacionViaje, id=inv_id)
+
+    # Solo el receptor puede aceptar
+    if invitacion.receptor_id != usuario.id:
+        return redirect("core:perfil")
+
+    if invitacion.estado != InvitacionViaje.Estado.PENDIENTE:
+        return redirect("core:perfil")
+
+    invitacion.viaje.participantes.add(usuario)
+    invitacion.estado = InvitacionViaje.Estado.ACEPTADA
+    invitacion.save()
+    messages.success(request, "Invitación aceptada. Ya participas en el viaje.")
+    return redirect("core:perfil")
+
+
+@require_POST
+@login_required_usuario
+def rechazar_invitacion(request, inv_id):
+    usuario = get_usuario_actual(request)
+    invitacion = get_object_or_404(InvitacionViaje, id=inv_id)
+
+    # Solo el receptor puede rechazar
+    if invitacion.receptor_id != usuario.id:
+        return redirect("core:perfil")
+
+    if invitacion.estado != InvitacionViaje.Estado.PENDIENTE:
+        return redirect("core:perfil")
+
+    invitacion.estado = InvitacionViaje.Estado.RECHAZADA
+    invitacion.save()
+    messages.info(request, "Invitación rechazada.")
+    return redirect("core:perfil")

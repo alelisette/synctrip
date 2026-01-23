@@ -14,9 +14,14 @@
                 </p>
             </div>
             <div class="card-body">
-                <p><strong>Punto de encuentro:</strong> {{ viaje.punto_encuentro }}</p>
-                <p><strong>Precio:</strong> {{ viaje.precio }} €</p>
-                <p><strong>Estado:</strong> {{ viaje.estado }}</p>
+
+                <p><strong>Origen:</strong> {{ viaje.ciudad_origen }} ({{ viaje.pais_origen }})</p>
+                <p><strong>Dirección de encuentro:</strong> {{ viaje.direccion_encuentro }}</p>
+
+                <p><strong>Precio por persona:</strong> {{ viaje.precio_persona }} €</p>
+                <p><strong>Estado:</strong> {{ viaje.get_estado_viaje_display }}</p>
+                <p><strong>Visibilidad:</strong> {{ viaje.get_visibilidad_display }}</p>
+
                 <p><strong>Creador:</strong> {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }} ({{ viaje.creador.correo }})</p>
 
                 {% if es_creador %}
@@ -28,6 +33,31 @@
                             Eliminar viaje
                         </a>
                     </p>
+                    {% if es_creador and viaje.visibilidad == "PRIVADO" %}
+                    <hr>
+                    <h3>Invitar por username</h3>
+
+                    {% if invite_success %}
+                        <p style="color:green; font-weight:600;">{{ invite_success }}</p>
+                    {% endif %}
+                    {% if invite_error %}
+                        <p style="color:red; font-weight:600;">{{ invite_error }}</p>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'core:invitar_a_viaje' viaje.id %}" style="max-width:420px;">
+                        {% csrf_token %}
+                        <input
+                        type="text"
+                        name="username_destino"
+                        placeholder="Username del usuario (ej: maria_123)"
+                        required
+                        style="width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:8px;"
+                        >
+                        <button type="submit" class="btn">Enviar invitación</button>
+                    </form>
+                    
+
+                    {% endif %}
                 {% endif %}
 
             </div>
@@ -70,10 +100,10 @@
     </aside>
 </div>
 
-<!-- Estilos específicos para el detalle del viaje -->
- {% if es_creador %}
-<!-- Pestaña lateral -->
- <script src="{% static 'core/js/syncbot.js' %}"></script>
+<!-- SyncBot solo si es creador -->
+{% if es_creador %}
+<script src="{% static 'core/js/syncbot.js' %}"></script>
+
 <button id="syncbot-tab"
         class="syncbot-tab"
         aria-label="Abrir SyncBot"
@@ -83,21 +113,17 @@
   <span class="syncbot-tab-text">SyncBot</span>
 </button>
 
-<!-- Panel lateral -->
 <div id="syncbot-drawer" class="syncbot-drawer" aria-hidden="true">
-<div class="syncbot-header">
-  <div class="syncbot-title">
-    <div class="syncbot-avatar">🤖</div>
-    <div>
-      <div class="syncbot-name">SyncBot</div>
-      <div class="syncbot-sub">
-        Asistente del viaje
+  <div class="syncbot-header">
+    <div class="syncbot-title">
+      <div class="syncbot-avatar">🤖</div>
+      <div>
+        <div class="syncbot-name">SyncBot</div>
+        <div class="syncbot-sub">Asistente del viaje</div>
       </div>
     </div>
+    <button id="syncbot-close" class="syncbot-close" aria-label="Cerrar">✕</button>
   </div>
-  <button id="syncbot-close" class="syncbot-close" aria-label="Cerrar">✕</button>
-</div>
-
 
   <div id="syncbot-messages" class="syncbot-messages">
     <div class="syncbot-bubble bot">
@@ -110,7 +136,7 @@
     <button id="syncbot-send" class="syncbot-send" type="button">➤</button>
   </div>
 </div>
-<!-- Fondo oscuro cuando está abierto -->
+
 <div id="syncbot-backdrop" class="syncbot-backdrop" hidden></div>
 {% endif %}
 

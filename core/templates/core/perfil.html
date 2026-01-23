@@ -4,14 +4,127 @@
 {% block content %}
 <h1>Mi perfil</h1>
 
+{% if messages %}
+  <ul style="list-style:none; padding:0;">
+    {% for m in messages %}
+      <li style="margin:8px 0; padding:10px; border-radius:10px; background:#f3f4f6;">
+        {{ m }}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 <p><strong>Correo:</strong> {{ usuario.correo }}</p>
 <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
 <p><strong>Apellidos:</strong> {{ usuario.apellidos }}</p>
 <p><strong>Fecha de nacimiento:</strong> {{ usuario.fecha_nacimiento }}</p>
-<!-- No mostramos la contraseña -->
+
+<hr>
+
+<h2>Mi username</h2>
+<p><strong>Username:</strong> {{ usuario.username }}</p>
+
+<hr>
+
+<h2>Enviar solicitud de amistad</h2>
+<form method="post" action="{% url 'core:enviar_solicitud' %}" style="max-width: 420px;">
+  {% csrf_token %}
+  <label for="username_destino"><strong>Username del usuario:</strong></label><br>
+  <input
+    type="text"
+    name="username_destino"
+    id="username_destino"
+    placeholder="Ej: maria_123"
+    required
+    style="width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px;"
+  >
+  <button
+    type="submit"
+    style="padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; background: #0b3d6e; color: white;"
+  >
+    Enviar solicitud
+  </button>
+</form>
+
+<hr>
+
+<h3>Solicitudes recibidas (pendientes)</h3>
+{% for s in solicitudes_recibidas %}
+  <div style="display:flex; gap:10px; align-items:center; margin:10px 0; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
+    <div style="flex:1;">
+      <strong>@{{ s.emisor.username }}</strong>
+      <div style="font-size: 13px; color:#6b7280;">
+        {{ s.emisor.nombre }} {{ s.emisor.apellidos }}
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'core:aceptar_solicitud' s.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit"
+              style="padding:8px 10px; border:0; border-radius:8px; cursor:pointer; background:#0b3d6e; color:white;">
+        Aceptar
+      </button>
+    </form>
+
+    <form method="post" action="{% url 'core:finalizar_solicitud' s.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit"
+              style="padding:8px 10px; border:0; border-radius:8px; cursor:pointer; background:#b91c1c; color:white;">
+        Rechazar
+      </button>
+    </form>
+  </div>
+{% empty %}
+  <p>No tienes solicitudes pendientes.</p>
+{% endfor %}
+
+<hr>
+
+<h3>Solicitudes enviadas (últimas 10)</h3>
+{% for s in solicitudes_enviadas %}
+  <div style="margin:8px 0; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
+    <strong>A @{{ s.receptor.username }}</strong> — Estado: {{ s.get_estado_display }}
+    {% if s.estado == "PENDIENTE" %}
+      <form method="post" action="{% url 'core:finalizar_solicitud' s.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit"
+                style="margin-left:10px; padding:6px 10px; border:0; border-radius:8px; cursor:pointer; background:#6b7280; color:white;">
+          Cancelar
+        </button>
+      </form>
+    {% endif %}
+  </div>
+{% empty %}
+  <p>No has enviado solicitudes todavía.</p>
+{% endfor %}
+
+<hr>
+
+<h3>Invitaciones a viajes (pendientes)</h3>
+{% for inv in invitaciones_viaje %}
+  <div style="margin-bottom:10px; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
+    <strong>@{{ inv.emisor.username }}</strong> te invitó al viaje a
+    <strong>{{ inv.viaje.ciudad_destino }}</strong>
+    ({{ inv.viaje.fecha_ida }} - {{ inv.viaje.fecha_vuelta }})
+
+    <form method="post" action="{% url 'core:aceptar_invitacion' inv.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit">Aceptar</button>
+    </form>
+
+    <form method="post" action="{% url 'core:rechazar_invitacion' inv.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit">Rechazar</button>
+    </form>
+  </div>
+{% empty %}
+  <p>No tienes invitaciones pendientes.</p>
+{% endfor %}
+
+<hr>
 
 <p>
-    <a href="{% url 'core:editar_perfil' %}">Editar perfil</a> |
-    <a href="{% url 'core:borrar_cuenta' %}">Borrar cuenta</a>
+  <a href="{% url 'core:editar_perfil' %}">Editar perfil</a> |
+  <a href="{% url 'core:borrar_cuenta' %}">Borrar cuenta</a>
 </p>
 {% endblock %}

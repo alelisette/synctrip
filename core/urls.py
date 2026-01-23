@@ -26,6 +26,13 @@ urlpatterns = [
     path('viajes/<int:viaje_id>/chat/', views.chat_viaje_api, name='chat_viaje_api'),
     path("favicon.ico", RedirectView.as_view(url=static("favicon.ico"))),
     path('viajes/<int:viaje_id>/chat/historial/', views.chat_viaje_historial, name='chat_viaje_historial'),
+    # amistad
+    path("amistad/enviar/", views.enviar_solicitud, name="enviar_solicitud"),
+    path("amistad/<int:solicitud_id>/aceptar/", views.aceptar_solicitud, name="aceptar_solicitud"),
+    path("amistad/<int:solicitud_id>/finalizar/", views.finalizar_solicitud, name="finalizar_solicitud"),
+    path("viajes/<int:viaje_id>/invitar/", views.invitar_a_viaje, name="invitar_a_viaje"),
+    path("invitaciones/<int:inv_id>/aceptar/", views.aceptar_invitacion, name="aceptar_invitacion"),
+    path("invitaciones/<int:inv_id>/rechazar/", views.rechazar_invitacion, name="rechazar_invitacion"),
 
 ]
 

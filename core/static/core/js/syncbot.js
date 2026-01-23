@@ -108,14 +108,15 @@
   const typingBubble = addBubble("Escribiendo…", "bot");
   typingBubble.classList.add("typing"); 
 
+//Función para enviar el mensaje al servidor
   try {
     const res = await fetch(chatUrl, {
-      method: "POST",
+      method: "POST", // Usar POST para enviar datos
       headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
+        "Content-Type": "application/json", //Indicar que enviamos JSON
+        "X-CSRFToken": getCookie("csrftoken"), 
       },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text }),//Convertir el mensaje a JSON
     });
 
     const data = await res.json();
