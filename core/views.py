@@ -18,6 +18,8 @@ from .models import InvitacionViaje
 from .models import SolicitudAmistad, InvitacionViaje
 
 from .models import ChatMessage  
+from .models import GrupoChat, MensajeGrupoChat
+
 
 client = OpenAI()  # usará OPENAI_API_KEY del entorno virtual
 
@@ -47,11 +49,19 @@ def login_required_usuario(view_func):
 
 def home(request):
     usuario_actual = get_usuario_actual(request)
-    viajes = Viaje.objects.all().order_by('-fecha_ida')[:5]
+
+    # Solo viajes públicos en la home
+    viajes = (
+        Viaje.objects
+        .filter(visibilidad=Viaje.Visibilidad.PUBLICO)   # o "PUBLICO"
+        .order_by('-fecha_ida')[:5]
+    )
+
     return render(request, 'core/home.html', {
         'usuario_actual': usuario_actual,
         'viajes': viajes,
     })
+
 
 
 # ========= VISTAS DE VIAJES =========
@@ -70,12 +80,23 @@ def detalle_viaje(request, viaje_id):
     viaje = get_object_or_404(Viaje, id=viaje_id)
     participantes = viaje.participantes.all()
     es_creador = usuario_actual and (viaje.creador_id == usuario_actual.id)
-
+    # ===== Chat de grupo del viaje (opcional) =====
+    grupo_chat = GrupoChat.objects.filter(viaje=viaje).first()
+    mensajes_grupo = []
+    if grupo_chat:
+        mensajes_grupo = (MensajeGrupoChat.objects
+                          .filter(grupo=grupo_chat)
+                          .select_related("autor")
+                          .order_by("fecha_envio")[:100])  # últimos 100
+        
     return render(request, 'core/detalle_viaje.html', {
         'viaje': viaje,
         'participantes': participantes,
         'usuario_actual': usuario_actual,
         'es_creador': es_creador,
+        "grupo_chat": grupo_chat,
+        "mensajes_grupo": mensajes_grupo,
+
     })
 
 # ========= FORMULARIOS DE USUARIO =========
@@ -702,3 +723,120 @@ def rechazar_invitacion(request, inv_id):
     invitacion.save()
     messages.info(request, "Invitación rechazada.")
     return redirect("core:perfil")
+
+
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+
+@require_POST
+@login_required_usuario
+def crear_grupo_chat(request, viaje_id):
+    """
+    Solo el creador del viaje puede crear el grupo.
+    El grupo es opcional (si no lo creas, no existe).
+    """
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if viaje.creador_id != usuario.id:
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    # Si ya existe, no lo duplicamos
+    if GrupoChat.objects.filter(viaje=viaje).exists():
+        messages.info(request, "El grupo de chat ya existe.")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    GrupoChat.objects.create(viaje=viaje, creado_por=usuario, nombre="Chat del viaje")
+    messages.success(request, "Grupo de chat creado ✅")
+    return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+
+@require_POST
+@login_required_usuario
+def enviar_mensaje_grupo(request, viaje_id):
+    """
+    Solo participantes pueden enviar mensajes.
+    El grupo debe existir.
+    """
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    # Solo participantes
+    es_participante = viaje.participantes.filter(id=usuario.id).exists()
+    if not es_participante:
+        return JsonResponse({"error": "No eres participante de este viaje"}, status=403)
+
+    grupo = GrupoChat.objects.filter(viaje=viaje).first()
+    if not grupo:
+        messages.error(request, "Este viaje aún no tiene grupo de chat.")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    contenido = (request.POST.get("contenido") or "").strip()
+    if not contenido:
+        messages.error(request, "Mensaje vacío.")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    MensajeGrupoChat.objects.create(grupo=grupo, autor=usuario, contenido=contenido)
+    return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+
+
+@require_GET
+@login_required_usuario
+def grupo_chat_historial_api(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not viaje.participantes.filter(id=usuario.id).exists():
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    grupo = GrupoChat.objects.filter(viaje=viaje).first()
+    if not grupo:
+        return JsonResponse({"messages": [], "has_group": False})
+
+    msgs = (MensajeGrupoChat.objects
+            .filter(grupo=grupo)
+            .select_related("autor")
+            .order_by("fecha_envio")[:100])
+
+    data = [{
+        "username": m.autor.username,
+        "content": m.contenido,
+        "fecha_envio": m.fecha_envio.isoformat(),
+    } for m in msgs]
+
+    return JsonResponse({"has_group": True, "messages": data})
+
+
+@require_POST
+@login_required_usuario
+def enviar_mensaje_grupo_api(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not viaje.participantes.filter(id=usuario.id).exists():
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    grupo = GrupoChat.objects.filter(viaje=viaje).first()
+    if not grupo:
+        return JsonResponse({"error": "No existe grupo"}, status=400)
+
+    try:
+        import json
+        data = json.loads(request.body.decode("utf-8"))
+        contenido = (data.get("contenido") or "").strip()
+    except Exception:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    if not contenido:
+        return JsonResponse({"error": "Mensaje vacío"}, status=400)
+
+    m = MensajeGrupoChat.objects.create(grupo=grupo, autor=usuario, contenido=contenido)
+    return JsonResponse({
+        "ok": True,
+        "message": {
+            "username": m.autor.username,
+            "content": m.contenido,
+            "fecha_envio": m.fecha_envio.isoformat(),
+        }
+    })

@@ -158,3 +158,52 @@ class InvitacionViaje(models.Model):
 
     def __str__(self):
         return f"Invitación {self.viaje_id}: {self.emisor.username} -> {self.receptor.username} ({self.estado})"
+
+from django.db import models
+from django.utils import timezone
+
+class GrupoChat(models.Model):
+    """
+    Un chat opcional por viaje (0..1).
+    Solo se crea si el creador del viaje lo decide.
+    """
+    viaje = models.OneToOneField(
+        "Viaje",
+        on_delete=models.CASCADE,
+        related_name="grupo_chat"
+    )
+    creado_por = models.ForeignKey(
+        "Usuario",
+        on_delete=models.CASCADE,
+        related_name="grupos_chat_creados"
+    )
+    nombre = models.CharField(max_length=100, default="Chat del viaje")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"GrupoChat({self.viaje_id}) - {self.nombre}"
+
+
+class MensajeGrupoChat(models.Model):
+    """
+    Mensajes del grupo del viaje.
+    Solo pueden escribir usuarios participantes de ese viaje.
+    """
+    grupo = models.ForeignKey(
+        "GrupoChat",
+        on_delete=models.CASCADE,
+        related_name="mensajes"
+    )
+    autor = models.ForeignKey(
+        "Usuario",
+        on_delete=models.CASCADE,
+        related_name="mensajes_grupo"
+    )
+    contenido = models.TextField()
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["fecha_envio"]
+
+    def __str__(self):
+        return f"{self.grupo.viaje_id} @{self.autor.username}: {self.contenido[:30]}"

@@ -60,6 +60,55 @@
                     {% endif %}
                 {% endif %}
 
+                <hr>
+
+                <h2>Chat del viaje</h2>
+
+                {% if not grupo_chat %}
+                  {% if es_creador %}
+                    <p style="color:#6b7280;">Este viaje todavía no tiene grupo de chat.</p>
+                    <form method="post" action="{% url 'core:crear_grupo_chat' viaje.id %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn">Crear grupo de chat</button>
+                    </form>
+                  {% else %}
+                    <p style="color:#6b7280;">El creador aún no ha creado el grupo de chat.</p>
+                  {% endif %}
+
+                {% else %}
+                  <div style="border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff;">
+                    <div style="max-height:260px; overflow:auto; padding-right:6px;">
+                      {% for m in mensajes_grupo %}
+                        <div style="padding:10px 0; border-bottom:1px solid #f1f5f9;">
+                          <!-- Username en gris y más pequeño -->
+                          <div style="font-size:12px; color:#6b7280; font-weight:600;">
+                            @{{ m.autor.username }} · {{ m.fecha_envio|date:"d/m H:i" }}
+                          </div>
+                          <!-- Mensaje -->
+                          <div style="font-size:14px; margin-top:4px; white-space:pre-wrap;">
+                            {{ m.contenido }}
+                          </div>
+                        </div>
+                      {% empty %}
+                        <p style="color:#6b7280;">Aún no hay mensajes.</p>
+                      {% endfor %}
+                    </div>
+
+                    <!-- Enviar mensaje (solo participantes) -->
+                    <form method="post" action="{% url 'core:enviar_mensaje_grupo' viaje.id %}" style="margin-top:10px; display:flex; gap:10px;">
+                      {% csrf_token %}
+                      <input
+                        type="text"
+                        name="contenido"
+                        placeholder="Escribe un mensaje al grupo…"
+                        required
+                        style="flex:1; padding:10px; border:1px solid #d1d5db; border-radius:10px;"
+                      >
+                      <button type="submit" class="btn">Enviar</button>
+                    </form>
+                  </div>
+                {% endif %}
+
             </div>
         </div>
 
@@ -82,13 +131,12 @@
             {% for u in participantes %}
                 <li data-name="{{ u.nombre }} {{ u.apellidos }}">
                     <div class="participante-linea">
-                        <div>
-                            <strong>{{ u.nombre }} {{ u.apellidos }}</strong><br>
-                            <span class="participante-correo">{{ u.correo }}</span>
-                        </div>
-
+                    <div>
+                        <strong>{{ u.nombre }} {{ u.apellidos }}</strong><br>
+                        <span class="participante-sub">@{{ u.username }}</span>
+                    </div>
                         {% if u.id == viaje.creador.id %}
-                            <span class="pill pill-creador">Creador</span>
+                            <span class="pill pill-creador">CREADOR</span>
                         {% endif %}
                     </div>
                 </li>

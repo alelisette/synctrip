@@ -33,6 +33,11 @@ urlpatterns = [
     path("viajes/<int:viaje_id>/invitar/", views.invitar_a_viaje, name="invitar_a_viaje"),
     path("invitaciones/<int:inv_id>/aceptar/", views.aceptar_invitacion, name="aceptar_invitacion"),
     path("invitaciones/<int:inv_id>/rechazar/", views.rechazar_invitacion, name="rechazar_invitacion"),
+    # chat de grupo (viaje)
+    path("viajes/<int:viaje_id>/grupo/crear/", views.crear_grupo_chat, name="crear_grupo_chat"),
+    path("viajes/<int:viaje_id>/grupo/enviar/", views.enviar_mensaje_grupo, name="enviar_mensaje_grupo"),
+    path("viajes/<int:viaje_id>/grupo/historial/", views.grupo_chat_historial_api, name="grupo_chat_historial_api"),
+    path("viajes/<int:viaje_id>/grupo/enviar-json/", views.enviar_mensaje_grupo_api, name="enviar_mensaje_grupo_api"),
 
 ]
 
