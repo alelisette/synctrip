@@ -38,6 +38,14 @@ urlpatterns = [
     path("viajes/<int:viaje_id>/grupo/enviar/", views.enviar_mensaje_grupo, name="enviar_mensaje_grupo"),
     path("viajes/<int:viaje_id>/grupo/historial/", views.grupo_chat_historial_api, name="grupo_chat_historial_api"),
     path("viajes/<int:viaje_id>/grupo/enviar-json/", views.enviar_mensaje_grupo_api, name="enviar_mensaje_grupo_api"),
+# urls.py
+    path(
+        "viajes/<int:viaje_id>/itinerario/publico/",
+        views.actualizar_itinerario_publico,
+        name="actualizar_itinerario_publico",
+    ),
+
+
 
 ]
 

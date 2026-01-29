@@ -1,130 +1,160 @@
 {% extends 'core/base.html' %}
+{% load static %}
+
 {% block title %}Mi perfil - SyncTrip{% endblock %}
 
 {% block content %}
-<h1>Mi perfil</h1>
+<link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 
-{% if messages %}
-  <ul style="list-style:none; padding:0;">
-    {% for m in messages %}
-      <li style="margin:8px 0; padding:10px; border-radius:10px; background:#f3f4f6;">
-        {{ m }}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
+<div class="container profile-page">
 
-<p><strong>Correo:</strong> {{ usuario.correo }}</p>
-<p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
-<p><strong>Apellidos:</strong> {{ usuario.apellidos }}</p>
-<p><strong>Fecha de nacimiento:</strong> {{ usuario.fecha_nacimiento }}</p>
+  <!-- Header del perfil -->
+  <section class="card profile-header">
+    <div class="profile-hero">
+      <div class="profile-avatar" aria-hidden="true">
+        {{ usuario_actual.username|slice:":1"|upper }}
+      </div>
 
-<hr>
+      <div class="profile-hero-text">
+        <h1 class="profile-name">@{{ usuario_actual.username }}</h1>
+        <p class="profile-subtitle">
+          Gestiona tus amistades e invitaciones (estilo red social).
+        </p>
+      </div>
 
-<h2>Mi username</h2>
-<p><strong>Username:</strong> {{ usuario.username }}</p>
-
-<hr>
-
-<h2>Enviar solicitud de amistad</h2>
-<form method="post" action="{% url 'core:enviar_solicitud' %}" style="max-width: 420px;">
-  {% csrf_token %}
-  <label for="username_destino"><strong>Username del usuario:</strong></label><br>
-  <input
-    type="text"
-    name="username_destino"
-    id="username_destino"
-    placeholder="Ej: maria_123"
-    required
-    style="width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px;"
-  >
-  <button
-    type="submit"
-    style="padding: 10px 14px; border: 0; border-radius: 8px; cursor: pointer; background: #0b3d6e; color: white;"
-  >
-    Enviar solicitud
-  </button>
-</form>
-
-<hr>
-
-<h3>Solicitudes recibidas (pendientes)</h3>
-{% for s in solicitudes_recibidas %}
-  <div style="display:flex; gap:10px; align-items:center; margin:10px 0; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
-    <div style="flex:1;">
-      <strong>@{{ s.emisor.username }}</strong>
-      <div style="font-size: 13px; color:#6b7280;">
-        {{ s.emisor.nombre }} {{ s.emisor.apellidos }}
+      <div class="profile-actions">
+        <a class="btn btn-ghost" href="{% url 'core:editar_perfil' %}">Editar perfil</a>
+        <a class="btn btn-danger" href="{% url 'core:borrar_cuenta' %}">Borrar cuenta</a>
       </div>
     </div>
+  </section>
 
-    <form method="post" action="{% url 'core:aceptar_solicitud' s.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit"
-              style="padding:8px 10px; border:0; border-radius:8px; cursor:pointer; background:#0b3d6e; color:white;">
-        Aceptar
-      </button>
-    </form>
+  <div class="profile-grid">
 
-    <form method="post" action="{% url 'core:finalizar_solicitud' s.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit"
-              style="padding:8px 10px; border:0; border-radius:8px; cursor:pointer; background:#b91c1c; color:white;">
-        Rechazar
-      </button>
-    </form>
+    <!-- Columna izquierda: acciones -->
+    <aside class="profile-col">
+
+      <!-- Enviar solicitud -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="section-title">Añadir amigo</h2>
+          <p class="section-subtitle">Busca por username (ej: maria_123).</p>
+        </div>
+        <div class="card-body">
+          {% if error %}
+            <p class="notice notice-bad">{{ error }}</p>
+          {% endif %}
+          {% if success %}
+            <p class="notice notice-ok">{{ success }}</p>
+          {% endif %}
+
+          <form method="post" action="{% url 'core:enviar_solicitud' %}" class="stack">
+            {% csrf_token %}
+            <label for="username_destino">Username del usuario</label>
+            <input id="username_destino" name="username_destino" type="text" placeholder="Ej: maria_123" required>
+            <button type="submit" class="btn btn-full">Enviar solicitud</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Invitaciones a viajes -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="section-title">Invitaciones a viajes</h2>
+          <p class="section-subtitle">Pendientes de respuesta.</p>
+        </div>
+        <div class="card-body">
+          {% if invitaciones_viaje %}
+            <ul class="list-cards">
+              {% for inv in invitaciones_viaje %}
+                <li class="list-item">
+                  <div class="list-main">
+                    <div class="list-title">{{ inv.viaje.nombre }}</div>
+                    <div class="list-meta">
+                      <span class="muted">Invita:</span>
+                      <strong>@{{ inv.viaje.creador.username }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="list-actions">
+                    <a class="btn btn-sm" href="{% url 'core:aceptar_invitacion' inv.id %}">Aceptar</a>
+                    <a class="btn btn-sm btn-ghost" href="{% url 'core:rechazar_invitacion' inv.id %}">Rechazar</a>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted">No tienes invitaciones pendientes.</p>
+          {% endif %}
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- Columna derecha: solicitudes -->
+    <main class="profile-col">
+
+      <!-- Solicitudes recibidas -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="section-title">Solicitudes recibidas</h2>
+          <p class="section-subtitle">Amistades pendientes.</p>
+        </div>
+        <div class="card-body">
+          {% if solicitudes_recibidas %}
+            <ul class="list-cards">
+              {% for s in solicitudes_recibidas %}
+                <li class="list-item">
+                  <div class="list-main">
+                    <div class="list-title">@{{ s.emisor.username }}</div>
+                    <div class="list-meta muted">Solicitud pendiente</div>
+                  </div>
+
+                  <div class="list-actions">
+                    <a class="btn btn-sm" href="{% url 'core:aceptar_solicitud' s.id %}">Aceptar</a>
+                    <a class="btn btn-sm btn-ghost" href="{% url 'core:finalizar_solicitud' s.id %}">Rechazar</a>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted">No tienes solicitudes pendientes.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Solicitudes enviadas -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="section-title">Solicitudes enviadas</h2>
+          <p class="section-subtitle">Últimas 10.</p>
+        </div>
+        <div class="card-body">
+          {% if solicitudes_enviadas %}
+            <ul class="list-cards">
+              {% for s in solicitudes_enviadas %}
+                <li class="list-item">
+                  <div class="list-main">
+                    <div class="list-title">@{{ s.receptor.username }}</div>
+                    <div class="list-meta muted">Pendiente</div>
+                  </div>
+
+                  <div class="list-actions">
+                    <a class="btn btn-sm btn-ghost" href="{% url 'core:finalizar_solicitud' s.id %}">
+                      Cancelar
+                    </a>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted">No has enviado solicitudes todavía.</p>
+          {% endif %}
+        </div>
+      </section>
+
+    </main>
+
   </div>
-{% empty %}
-  <p>No tienes solicitudes pendientes.</p>
-{% endfor %}
-
-<hr>
-
-<h3>Solicitudes enviadas (últimas 10)</h3>
-{% for s in solicitudes_enviadas %}
-  <div style="margin:8px 0; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
-    <strong>A @{{ s.receptor.username }}</strong> — Estado: {{ s.get_estado_display }}
-    {% if s.estado == "PENDIENTE" %}
-      <form method="post" action="{% url 'core:finalizar_solicitud' s.id %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit"
-                style="margin-left:10px; padding:6px 10px; border:0; border-radius:8px; cursor:pointer; background:#6b7280; color:white;">
-          Cancelar
-        </button>
-      </form>
-    {% endif %}
-  </div>
-{% empty %}
-  <p>No has enviado solicitudes todavía.</p>
-{% endfor %}
-
-<hr>
-
-<h3>Invitaciones a viajes (pendientes)</h3>
-{% for inv in invitaciones_viaje %}
-  <div style="margin-bottom:10px; padding:10px; border:1px solid #e5e7eb; border-radius:10px;">
-    <strong>@{{ inv.emisor.username }}</strong> te invitó al viaje a
-    <strong>{{ inv.viaje.ciudad_destino }}</strong>
-    ({{ inv.viaje.fecha_ida }} - {{ inv.viaje.fecha_vuelta }})
-
-    <form method="post" action="{% url 'core:aceptar_invitacion' inv.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit">Aceptar</button>
-    </form>
-
-    <form method="post" action="{% url 'core:rechazar_invitacion' inv.id %}" style="display:inline;">
-      {% csrf_token %}
-      <button type="submit">Rechazar</button>
-    </form>
-  </div>
-{% empty %}
-  <p>No tienes invitaciones pendientes.</p>
-{% endfor %}
-
-<hr>
-
-<p>
-  <a href="{% url 'core:editar_perfil' %}">Editar perfil</a> |
-  <a href="{% url 'core:borrar_cuenta' %}">Borrar cuenta</a>
-</p>
+</div>
 {% endblock %}

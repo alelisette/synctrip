@@ -66,16 +66,41 @@ def home(request):
 
 # ========= VISTAS DE VIAJES =========
 
+from django.db.models import Q
+
+@login_required_usuario
 def lista_viajes(request):
-    usuario_actual = get_usuario_actual(request)
-    viajes = Viaje.objects.all().order_by('fecha_ida')
-    return render(request, 'core/lista_viajes.html', {
-        'viajes': viajes,
-        'usuario_actual': usuario_actual,
+    usuario = get_usuario_actual(request)
+
+    viajes = (
+        Viaje.objects
+        .filter(Q(visibilidad="PUBLICO") | Q(participantes=usuario))
+        .distinct()
+        .order_by("fecha_ida")
+    )
+
+    return render(request, "core/lista_viajes.html", {
+        "viajes": viajes,
+        "usuario_actual": usuario,
     })
 
 
+
+
 def detalle_viaje(request, viaje_id):
+    usuario_actual = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    participantes = viaje.participantes.all()
+    es_creador = usuario_actual and (viaje.creador_id == usuario_actual.id)
+
+    # 🔒 Bloqueo de viajes privados: solo creador o participantes
+    if viaje.visibilidad == Viaje.Visibilidad.PRIVADO:
+        if not usuario_actual:
+            return redirect('core:login')
+        if (not es_creador) and (usuario_actual not in participantes):
+            return redirect('core:lista_viajes')  # o puedes devolver 403
+
     usuario_actual = get_usuario_actual(request)
     viaje = get_object_or_404(Viaje, id=viaje_id)
     participantes = viaje.participantes.all()
@@ -840,3 +865,34 @@ def enviar_mensaje_grupo_api(request, viaje_id):
             "fecha_envio": m.fecha_envio.isoformat(),
         }
     })
+
+
+
+
+# views.py
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+
+@require_POST
+@login_required_usuario
+def actualizar_itinerario_publico(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    # Solo creador
+    if viaje.creador_id != usuario.id:
+        messages.error(request, "No tienes permiso para editar el itinerario.")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    texto = (request.POST.get("itinerario_publico") or "").strip()
+
+    # límite opcional para evitar tochos infinitos
+    if len(texto) > 8000:
+        messages.error(request, "El itinerario es demasiado largo (máx. 8000 caracteres).")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    viaje.itinerario_publico = texto
+    viaje.save(update_fields=["itinerario_publico"])
+    messages.success(request, "Itinerario actualizado ✅")
+    return redirect("core:detalle_viaje", viaje_id=viaje.id)

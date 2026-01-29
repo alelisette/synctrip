@@ -1,193 +1,329 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Detalle viaje - SyncTrip{% endblock %}
-{% load static %}
+
 {% block content %}
-<div class="trip-detail-layout">
-    <!-- Columna principal con info del viaje -->
-    <div class="trip-main">
-        <div class="card">
-            <div class="card-header">
-                <h1>{{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</h1>
-                <p class="card-subtitle">
-                    Del {{ viaje.fecha_ida }} al {{ viaje.fecha_vuelta }}
-                </p>
-            </div>
-            <div class="card-body">
+<link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 
-                <p><strong>Origen:</strong> {{ viaje.ciudad_origen }} ({{ viaje.pais_origen }})</p>
-                <p><strong>Dirección de encuentro:</strong> {{ viaje.direccion_encuentro }}</p>
+<div class="social-layout">
 
-                <p><strong>Precio por persona:</strong> {{ viaje.precio_persona }} €</p>
-                <p><strong>Estado:</strong> {{ viaje.get_estado_viaje_display }}</p>
-                <p><strong>Visibilidad:</strong> {{ viaje.get_visibilidad_display }}</p>
+  <!-- =========================
+       FEED / CHAT (CENTRO)
+  ========================== -->
+  <main class="feed">
 
-                <p><strong>Creador:</strong> {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }} ({{ viaje.creador.correo }})</p>
-
-                {% if es_creador %}
-                    <p>
-                        <a href="{% url 'core:editar_viaje' viaje.id %}" class="btn">Editar viaje</a>
-                    </p>
-                    <p>
-                        <a href="{% url 'core:eliminar_viaje' viaje.id %}" class="btn btn-danger">
-                            Eliminar viaje
-                        </a>
-                    </p>
-                    {% if es_creador and viaje.visibilidad == "PRIVADO" %}
-                    <hr>
-                    <h3>Invitar por username</h3>
-
-                    {% if invite_success %}
-                        <p style="color:green; font-weight:600;">{{ invite_success }}</p>
-                    {% endif %}
-                    {% if invite_error %}
-                        <p style="color:red; font-weight:600;">{{ invite_error }}</p>
-                    {% endif %}
-
-                    <form method="post" action="{% url 'core:invitar_a_viaje' viaje.id %}" style="max-width:420px;">
-                        {% csrf_token %}
-                        <input
-                        type="text"
-                        name="username_destino"
-                        placeholder="Username del usuario (ej: maria_123)"
-                        required
-                        style="width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:8px;"
-                        >
-                        <button type="submit" class="btn">Enviar invitación</button>
-                    </form>
-                    
-
-                    {% endif %}
-                {% endif %}
-
-                <hr>
-
-                <h2>Chat del viaje</h2>
-
-                {% if not grupo_chat %}
-                  {% if es_creador %}
-                    <p style="color:#6b7280;">Este viaje todavía no tiene grupo de chat.</p>
-                    <form method="post" action="{% url 'core:crear_grupo_chat' viaje.id %}">
-                      {% csrf_token %}
-                      <button type="submit" class="btn">Crear grupo de chat</button>
-                    </form>
-                  {% else %}
-                    <p style="color:#6b7280;">El creador aún no ha creado el grupo de chat.</p>
-                  {% endif %}
-
-                {% else %}
-                  <div style="border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff;">
-                    <div style="max-height:260px; overflow:auto; padding-right:6px;">
-                      {% for m in mensajes_grupo %}
-                        <div style="padding:10px 0; border-bottom:1px solid #f1f5f9;">
-                          <!-- Username en gris y más pequeño -->
-                          <div style="font-size:12px; color:#6b7280; font-weight:600;">
-                            @{{ m.autor.username }} · {{ m.fecha_envio|date:"d/m H:i" }}
-                          </div>
-                          <!-- Mensaje -->
-                          <div style="font-size:14px; margin-top:4px; white-space:pre-wrap;">
-                            {{ m.contenido }}
-                          </div>
-                        </div>
-                      {% empty %}
-                        <p style="color:#6b7280;">Aún no hay mensajes.</p>
-                      {% endfor %}
-                    </div>
-
-                    <!-- Enviar mensaje (solo participantes) -->
-                    <form method="post" action="{% url 'core:enviar_mensaje_grupo' viaje.id %}" style="margin-top:10px; display:flex; gap:10px;">
-                      {% csrf_token %}
-                      <input
-                        type="text"
-                        name="contenido"
-                        placeholder="Escribe un mensaje al grupo…"
-                        required
-                        style="flex:1; padding:10px; border:1px solid #d1d5db; border-radius:10px;"
-                      >
-                      <button type="submit" class="btn">Enviar</button>
-                    </form>
-                  </div>
-                {% endif %}
-
-            </div>
-        </div>
-
-        <p><a href="{% url 'core:lista_viajes' %}">← Volver a la lista de viajes</a></p>
-    </div>
-
-    <!-- Columna lateral con participantes y buscador -->
-    <aside class="trip-sidebar">
-        <h2>Participantes</h2>
-
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input id="search-participantes"
-                   type="text"
-                   placeholder="Buscar por nombre y apellidos...">
-        </div>
-
-    {% if participantes %}
-        <ul id="lista-participantes" class="participantes-list">
-            {% for u in participantes %}
-                <li data-name="{{ u.nombre }} {{ u.apellidos }}">
-                    <div class="participante-linea">
-                    <div>
-                        <strong>{{ u.nombre }} {{ u.apellidos }}</strong><br>
-                        <span class="participante-sub">@{{ u.username }}</span>
-                    </div>
-                        {% if u.id == viaje.creador.id %}
-                            <span class="pill pill-creador">CREADOR</span>
-                        {% endif %}
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No hay participantes todavía.</p>
-    {% endif %}
-    </aside>
-</div>
-
-<!-- SyncBot solo si es creador -->
-{% if es_creador %}
-<script src="{% static 'core/js/syncbot.js' %}"></script>
-
-<button id="syncbot-tab"
-        class="syncbot-tab"
-        aria-label="Abrir SyncBot"
-        data-chat-url="{% url 'core:chat_viaje_api' viaje.id %}"
-        data-history-url="{% url 'core:chat_viaje_historial' viaje.id %}">
-  <span class="syncbot-tab-icon">🤖</span>
-  <span class="syncbot-tab-text">SyncBot</span>
-</button>
-
-<div id="syncbot-drawer" class="syncbot-drawer" aria-hidden="true">
-  <div class="syncbot-header">
-    <div class="syncbot-title">
-      <div class="syncbot-avatar">🤖</div>
+    <div class="feed-header">
       <div>
-        <div class="syncbot-name">SyncBot</div>
-        <div class="syncbot-sub">Asistente del viaje</div>
+        <h1 class="feed-title">{{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</h1>
+        <div class="feed-subtitle">
+          {{ viaje.fecha_ida }} → {{ viaje.fecha_vuelta }}
+          <span class="pill pill-soft">{{ viaje.get_visibilidad_display }}</span>
+          <span class="pill pill-soft">{{ viaje.get_estado_viaje_display }}</span>
+        </div>
+      </div>
+
+      <div class="feed-actions">
+        {% if es_creador %}
+          <a href="{% url 'core:editar_viaje' viaje.id %}" class="btn">Editar</a>
+          <a href="{% url 'core:eliminar_viaje' viaje.id %}" class="btn btn-danger">Eliminar</a>
+        {% endif %}
       </div>
     </div>
-    <button id="syncbot-close" class="syncbot-close" aria-label="Cerrar">✕</button>
-  </div>
 
-  <div id="syncbot-messages" class="syncbot-messages">
-    <div class="syncbot-bubble bot">
-      Hola 👋 Soy SyncBot. Pregúntame por itinerario, transporte, comida o actividades para este viaje.
+    <!-- ===== Chat del viaje ===== -->
+    <section class="card social-card">
+      <div class="card-header social-card-header">
+        <h2 class="section-title">Chat del viaje</h2>
+      </div>
+
+      <div class="card-body chat-body" id="grupo-chat-scroll">
+
+        {% if not grupo_chat %}
+          <div class="empty-state">
+            <p><strong>Aún no existe grupo de chat.</strong></p>
+            <p class="muted">El creador puede crearlo cuando quiera.</p>
+
+            {% if es_creador %}
+              <form method="post" action="{% url 'core:crear_grupo_chat' viaje.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn">Crear grupo de chat</button>
+              </form>
+            {% endif %}
+          </div>
+        {% else %}
+
+          {% if mensajes_grupo %}
+            <div class="chat-list">
+              {% for m in mensajes_grupo %}
+              <div class="chat-msg {% if usuario_actual and m.autor.id == usuario_actual.id %}me{% else %}other{% endif %}">
+              <div class="chat-avatar" aria-hidden="true">
+                {{ m.autor.nombre|first|upper }}{{ m.autor.apellidos|first|upper }}
+              </div>
+
+              <div class="chat-bubble">
+                <div class="chat-meta">
+                  <span class="chat-name">{{ m.autor.nombre }} {{ m.autor.apellidos }}</span>
+                  <span class="chat-username">@{{ m.autor.username }}</span>
+                  <span class="chat-dot">•</span>
+                  <span class="chat-time">{{ m.fecha_envio|date:"d/m H:i" }}</span>
+                </div>
+
+                <div class="chat-content">{{ m.contenido }}</div>
+              </div>
+            </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <p><strong>Sin mensajes todavía.</strong></p>
+              <p class="muted">Escribe el primero</p>
+            </div>
+          {% endif %}
+
+          <!-- Composer -->
+          <form method="post" action="{% url 'core:enviar_mensaje_grupo' viaje.id %}" class="chat-composer">
+            {% csrf_token %}
+            <input
+              type="text"
+              name="contenido"
+              placeholder="Escribe un mensaje al grupo…"
+              required
+              maxlength="600"
+              class="chat-input"
+            />
+            <button type="submit" class="btn chat-send">Enviar</button>
+          </form>
+
+        {% endif %}
+      </div>
+    </section>
+
+    <p class="back-link">
+      <a href="{% url 'core:lista_viajes' %}">← Volver a la lista de viajes</a>
+    </p>
+  </main>
+
+
+  <!-- =========================
+       SIDEBAR (DERECHA)
+  ========================== -->
+  <aside class="sidebar">
+
+    <!-- Tarjeta info viaje -->
+    <div class="card sidebar-card">
+      <div class="card-header">
+        <h2 class="section-title">Resumen del viaje</h2>
+      </div>
+      <div class="card-body">
+        <div class="kv">
+          <div class="k">Origen: </div>
+          <div class="v">{{ viaje.ciudad_origen }} ({{ viaje.pais_origen }})</div>
+        </div>
+        <div class="kv">
+          <div class="k">Encuentro: </div>
+          <div class="v">{{ viaje.direccion_encuentro }}</div>
+        </div>
+        <div class="kv">
+          <div class="k">Precio: </div>
+          <div class="v">{{ viaje.precio_persona }} € / persona</div>
+        </div>
+        <div class="kv">
+          <div class="k">Creador: </div>
+          <div class="v">
+            {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }}
+            <div class="muted">@{{ viaje.creador.username }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Itinerario del viaje (visible para todos, editable solo creador) -->
+    <div class="card sidebar-card itinerary-card">
+      <div class="card-header itinerary-header">
+        <div>
+          <h2 class="section-title">Itinerario</h2>
+          <p class="section-subtitle">Plan del viaje (visible para participantes).</p>
+        </div>
+
+        {% if es_creador %}
+          <span class="pill pill-soft">Editable</span>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+        {% if es_creador %}
+          <form method="post" action="{% url 'core:actualizar_itinerario_publico' viaje.id %}">
+            {% csrf_token %}
+            <textarea
+              name="contenido"
+              id="itinerary-textarea"
+              class="itinerary-textarea"
+              rows="8"
+              placeholder="Escribe aquí el plan final (por días, horas, lugares, etc.). Puedes copiar/pegar cosas de SyncBot."
+            >{{ itinerario.contenido }}</textarea>
+
+            <div class="itinerary-actions">
+              <button type="submit"
+                      id="itinerary-save-btn"
+                      class="btn btn-disabled"
+                      disabled>
+                Guardar
+              </button>
+            </div>
+          </form>
+        {% else %}
+          {% if viaje.itinerario_publico %}
+            <div class="itinerary-read">
+              {{ viaje.itinerario_publico|linebreaksbr }}
+            </div>
+          {% else %}
+            <p class="muted">El creador aún no ha publicado el itinerario.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Invitar por username (solo creador + privado) -->
+    {% if es_creador and viaje.visibilidad == "PRIVADO" %}
+      <div class="card sidebar-card">
+        <div class="card-header">
+          <h2 class="section-title">Invitar por username</h2>
+          <p class="section-subtitle">Solo para viajes privados.</p>
+        </div>
+        <div class="card-body">
+
+          {% if invite_success %}
+            <p class="notice notice-ok">{{ invite_success }}</p>
+          {% endif %}
+          {% if invite_error %}
+            <p class="notice notice-bad">{{ invite_error }}</p>
+          {% endif %}
+
+          <form method="post" action="{% url 'core:invitar_a_viaje' viaje.id %}" class="invite-form">
+            {% csrf_token %}
+            <input
+              type="text"
+              name="username_destino"
+              placeholder="Ej: maria_123"
+              required
+              class="invite-input"
+            >
+            <button type="submit" class="btn">Enviar invitación</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Participantes -->
+    <div class="card sidebar-card">
+      <div class="card-header">
+        <h2 class="section-title">Participantes</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input id="search-participantes" type="text" placeholder="Buscar por nombre y apellidos...">
+        </div>
+
+        {% if participantes %}
+          <ul id="lista-participantes" class="participantes-list social-participants">
+            {% for u in participantes %}
+              <li data-name="{{ u.nombre }} {{ u.apellidos }}">
+                <div class="participante-linea">
+                  <div>
+                    <strong>{{ u.nombre }} {{ u.apellidos }}</strong><br>
+                    <span class="participante-correo">@{{ u.username }}</span>
+                  </div>
+
+                  {% if u.id == viaje.creador.id %}
+                    <span class="pill pill-creador">Creador</span>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No hay participantes todavía.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- SyncBot (solo creador) -->
+{% if es_creador %}
+  <script src="{% static 'core/js/syncbot.js' %}"></script>
+
+  <button id="syncbot-tab"
+          class="syncbot-tab"
+          aria-label="Abrir SyncBot"
+          data-chat-url="{% url 'core:chat_viaje_api' viaje.id %}"
+          data-history-url="{% url 'core:chat_viaje_historial' viaje.id %}">
+    <span class="syncbot-tab-icon">🤖</span>
+    <span class="syncbot-tab-text">SyncBot</span>
+  </button>
+
+  <div id="syncbot-drawer" class="syncbot-drawer" aria-hidden="true">
+    <div class="syncbot-header">
+      <div class="syncbot-title">
+        <div class="syncbot-avatar">🤖</div>
+        <div>
+          <div class="syncbot-name">SyncBot</div>
+          <div class="syncbot-sub">Asistente del viaje</div>
+        </div>
+      </div>
+      <button id="syncbot-close" class="syncbot-close" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div id="syncbot-messages" class="syncbot-messages">
+      <div class="syncbot-bubble bot">
+        Hola 👋 Soy SyncBot. Pregúntame por itinerario, transporte, comida o actividades para este viaje.
+      </div>
+    </div>
+
+    <div class="syncbot-input">
+      <input id="syncbot-text" type="text" placeholder="Escribe tu mensaje…" />
+      <button id="syncbot-send" class="syncbot-send" type="button">➤</button>
     </div>
   </div>
 
-  <div class="syncbot-input">
-    <input id="syncbot-text" type="text" placeholder="Escribe tu mensaje…" />
-    <button id="syncbot-send" class="syncbot-send" type="button">➤</button>
-  </div>
-</div>
-
-<div id="syncbot-backdrop" class="syncbot-backdrop" hidden></div>
+  <div id="syncbot-backdrop" class="syncbot-backdrop" hidden></div>
 {% endif %}
 
 <script src="{% static 'core/js/participants_search.js' %}"></script>
+
+<script>
+  // Scroll abajo del chat del grupo al cargar (si existe)
+  (function() {
+    const el = document.getElementById("grupo-chat-scroll");
+    if (el) el.scrollTop = el.scrollHeight;
+  })();
+</script>
+
+<script>
+  (function(){
+    const textarea = document.getElementById("itinerary-textarea");
+    const saveBtn  = document.getElementById("itinerary-save-btn");
+
+    if(!textarea || !saveBtn) return;
+
+    const originalValue = textarea.value;
+
+    textarea.addEventListener("input", function(){
+      if(textarea.value !== originalValue){
+        saveBtn.disabled = false;
+        saveBtn.classList.remove("btn-disabled");
+        saveBtn.classList.add("btn-enabled");
+      } else {
+        saveBtn.disabled = true;
+        saveBtn.classList.remove("btn-enabled");
+        saveBtn.classList.add("btn-disabled");
+      }
+    });
+  })();
+</script>
 
 {% endblock %}

@@ -10,24 +10,22 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="brand">
-            <a href="{% url 'core:home' %}">SyncTrip</a>
-        </div>
-        <div>
+    <div class="brand">
+    <a href="{% url 'core:home' %}">SyncTrip</a>
+    </div>
+
+    <nav class="nav-links">
         {% if usuario_actual %}
-            Hola, {{ usuario_actual.nombre }} |
             <a href="{% url 'core:lista_viajes' %}">Viajes</a>
             <a href="{% url 'core:crear_viaje' %}">Crear viaje</a>
             <a href="{% url 'core:perfil' %}">Mi perfil</a>
-            <a href="{% url 'core:logout' %}">Cerrar sesión</a>
+            <a href="{% url 'core:logout' %}" class="nav-logout">Cerrar sesión</a>
         {% else %}
-
-                <a href="{% url 'core:login' %}">Iniciar sesión</a>
-                <a href="{% url 'core:registro' %}">Registrarse</a>
-            {% endif %}
-        </div>
-    </div>
-
+            <a href="{% url 'core:login' %}">Iniciar sesión</a>
+            <a href="{% url 'core:registro' %}" class="nav-primary">Registrarse</a>
+        {% endif %}
+    </nav>
+</div>
     <div class="container">
         {% block content %}
         {% endblock %}

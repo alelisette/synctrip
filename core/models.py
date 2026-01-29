@@ -74,6 +74,9 @@ class Viaje(models.Model):
         related_name='viajes_en_los_que_participa'
     )
 
+    itinerario_publico = models.TextField(blank=True, default="")  # NUEVO
+
+
     def __str__(self):
         return (
             f"{self.ciudad_origen} ({self.pais_origen}) → "
