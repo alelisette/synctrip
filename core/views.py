@@ -19,12 +19,86 @@ from .models import SolicitudAmistad, InvitacionViaje
 
 from .models import ChatMessage  
 from .models import GrupoChat, MensajeGrupoChat
+from .forms import UsuarioUpdateForm
 
 
 client = OpenAI()  # usará OPENAI_API_KEY del entorno virtual
 
 
 # ========= Helpers de sesión =========
+from decimal import Decimal, ROUND_HALF_UP
+from django.views.decorators.http import require_POST, require_GET
+from django.contrib import messages
+from django.shortcuts import render, get_object_or_404, redirect
+
+from .models import Viaje, Usuario, Gasto, GastoSplit, ParticipanteGasto
+
+from decimal import Decimal
+
+def liquidar_balances(balances: dict):
+    """
+    balances: {usuario: Decimal}
+    Retorna lista de transferencias:
+      [{"deudor": u1, "acreedor": u2, "importe": Decimal}, ...]
+    """
+    acreedores = []
+    deudores = []
+
+    for u, bal in balances.items():
+        if bal > 0:
+            # Usuario que debe cobrar (le deben dinero)
+            acreedores.append([u, bal])
+        elif bal < 0:
+            # Usuario que debe pagar (balance negativo)
+            deudores.append([u, -bal])  # deuda positiva
+
+    # Ordenar por importe descendente para emparejar grandes deudas primero
+    acreedores.sort(key=lambda x: x[1], reverse=True)
+    deudores.sort(key=lambda x: x[1], reverse=True)
+
+    transferencias = []
+    i = 0
+    j = 0
+
+    # Emparejar deudores con acreedores hasta saldar todos los importes
+    while i < len(deudores) and j < len(acreedores):
+        du, deuda = deudores[i]
+        au, credito = acreedores[j]
+
+        # Se transfiere el mínimo entre lo que debe y lo que debe cobrar
+        x = deuda if deuda < credito else credito
+
+        # Registrar la transferencia: du paga x a au
+        transferencias.append({
+            "deudor": du,
+            "acreedor": au,
+            "importe": x
+        })
+
+        # Actualizamos los saldos restantes
+        deudores[i][1] = deuda - x
+        acreedores[j][1] = credito - x
+
+        # Si el deudor ya pagó todo, pasamos al siguiente
+        if deudores[i][1] == 0:
+            i += 1
+        # Si el acreedor ya cobró todo, pasamos al siguiente
+        if acreedores[j][1] == 0:
+            j += 1
+
+    return transferencias
+
+def asegurar_participante_y_privado(request, viaje: Viaje, usuario: Usuario):
+    if viaje.visibilidad != Viaje.Visibilidad.PRIVADO:
+        messages.error(request, "Los gastos solo están disponibles en viajes privados.")
+        return False
+
+    if not viaje.participantes.filter(id=usuario.id).exists():
+        messages.error(request, "No eres participante de este viaje.")
+        return False
+
+    return True
+
 
 def get_usuario_actual(request):
     usuario_id = request.session.get('usuario_id')
@@ -46,15 +120,13 @@ def login_required_usuario(view_func):
 
 
 # ========= HOME =========
-
 def home(request):
     usuario_actual = get_usuario_actual(request)
 
-    # Solo viajes públicos en la home
     viajes = (
         Viaje.objects
-        .filter(visibilidad=Viaje.Visibilidad.PUBLICO)   # o "PUBLICO"
-        .order_by('-fecha_ida')[:5]
+        .filter(visibilidad=Viaje.Visibilidad.PUBLICO)
+        .order_by('-fecha_ida')
     )
 
     return render(request, 'core/home.html', {
@@ -67,14 +139,13 @@ def home(request):
 # ========= VISTAS DE VIAJES =========
 
 from django.db.models import Q
-
 @login_required_usuario
 def lista_viajes(request):
     usuario = get_usuario_actual(request)
 
     viajes = (
         Viaje.objects
-        .filter(Q(visibilidad="PUBLICO") | Q(participantes=usuario))
+        .filter(participantes=usuario)
         .distinct()
         .order_by("fecha_ida")
     )
@@ -83,7 +154,6 @@ def lista_viajes(request):
         "viajes": viajes,
         "usuario_actual": usuario,
     })
-
 
 
 
@@ -247,64 +317,56 @@ def logout_view(request):
     return redirect('core:home')
 
 
-from .models import SolicitudAmistad
+@login_required_usuario
+def solicitudes(request):
+    usuario = get_usuario_actual(request)
+
+    solicitudes_recibidas = SolicitudAmistad.objects.filter(
+        receptor=usuario, estado="PENDIENTE"
+    ).select_related("emisor").order_by("-id")
+
+    solicitudes_enviadas = SolicitudAmistad.objects.filter(
+        emisor=usuario
+    ).select_related("receptor").order_by("-id")[:10]
+
+    invitaciones_viaje = InvitacionViaje.objects.filter(
+        receptor=usuario, estado="PENDIENTE"
+    ).select_related("emisor", "viaje").order_by("-id")
+
+    return render(request, "core/solicitudes.html", {
+        "usuario_actual": usuario,
+        "solicitudes_recibidas": solicitudes_recibidas,
+        "solicitudes_enviadas": solicitudes_enviadas,
+        "invitaciones_viaje": invitaciones_viaje,
+    })
 
 
 @login_required_usuario
 def perfil(request):
     usuario = get_usuario_actual(request)
 
-    solicitudes_recibidas = (
-        SolicitudAmistad.objects
-        .filter(receptor=usuario, estado=SolicitudAmistad.Estado.PENDIENTE)
-        .select_related("emisor")
-        .order_by("-created_at")
-    )
+    if request.method == "POST":
+        form = UsuarioUpdateForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Cambios guardados ✅")
+            return redirect("core:perfil")
+        else:
+            messages.error(request, "Revisa los campos marcados.")
+    else:
+        form = UsuarioUpdateForm(instance=usuario)
 
-    solicitudes_enviadas = (
-        SolicitudAmistad.objects
-        .filter(emisor=usuario)
-        .select_related("receptor")
-        .order_by("-created_at")[:10]
-    )
-
-    # ✅ Invitaciones a viajes pendientes (para viajes privados)
-    invitaciones_viaje = (
-        InvitacionViaje.objects
-        .filter(receptor=usuario, estado=InvitacionViaje.Estado.PENDIENTE)
-        .select_related("emisor", "viaje")
-        .order_by("-created_at")
-    )
-
-    return render(request, "core/perfil.html", {
+    return render(request, "core/perfil_editable.html", {
         "usuario_actual": usuario,
         "usuario": usuario,
-        "solicitudes_recibidas": solicitudes_recibidas,
-        "solicitudes_enviadas": solicitudes_enviadas,
-        "invitaciones_viaje": invitaciones_viaje,  # lo nuevo
+        "form": form,
     })
 
 
 
 @login_required_usuario
 def editar_perfil(request):
-    usuario = get_usuario_actual(request)
-    if request.method == 'POST':
-        form = UsuarioUpdateForm(request.POST, instance=usuario)
-        if form.is_valid():
-            usuario = form.save()
-            nueva_contraseña = form.cleaned_data.get('nueva_contraseña')
-            if nueva_contraseña:
-                usuario.contraseña = nueva_contraseña
-                usuario.save()
-            return redirect('core:perfil')
-    else:
-        form = UsuarioUpdateForm(instance=usuario)
-
-    return render(request, 'core/editar_perfil.html', {
-        'form': form,
-        'usuario_actual': usuario,
-    })
+    return redirect("core:perfil")
 
 
 @login_required_usuario
@@ -896,3 +958,240 @@ def actualizar_itinerario_publico(request, viaje_id):
     viaje.save(update_fields=["itinerario_publico"])
     messages.success(request, "Itinerario actualizado ✅")
     return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+
+
+@require_POST
+def unirse_a_viaje(request, viaje_id):
+    usuario = get_usuario_actual(request)
+
+    # Si no hay sesión → login
+    if not usuario:
+        return redirect("core:login")
+
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    # Solo viajes públicos
+    if viaje.visibilidad != Viaje.Visibilidad.PUBLICO:
+        return redirect("core:home")
+
+    # Evitar duplicados
+    if not viaje.participantes.filter(id=usuario.id).exists():
+        viaje.participantes.add(usuario)
+
+    return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+
+
+# views.py
+from decimal import Decimal, ROUND_HALF_UP
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+from .models import Viaje, Gasto, GastoSplit
+
+@require_POST
+@login_required_usuario
+def crear_gasto(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not asegurar_participante_y_privado(request, viaje, usuario):
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    nombre = (request.POST.get("nombre") or "").strip()
+    descripcion = (request.POST.get("descripcion") or "").strip()
+    importe_str = (request.POST.get("importe_total") or "").strip().replace(",", ".")
+
+    if not nombre or not importe_str:
+        messages.error(request, "Rellena nombre e importe.")
+        return redirect("core:gastos_viaje", viaje_id=viaje.id)
+
+    try:
+        importe_total = Decimal(importe_str).quantize(Decimal("0.01"))
+        if importe_total <= 0:
+            raise ValueError()
+    except Exception:
+        messages.error(request, "Importe inválido.")
+        return redirect("core:gastos_viaje", viaje_id=viaje.id)
+
+    participantes = list(viaje.participantes.all())
+    n = len(participantes)
+
+    if n < 2:
+        messages.error(request, "Debe haber al menos 2 participantes para repartir gastos.")
+        return redirect("core:gastos_viaje", viaje_id=viaje.id)
+
+    gasto = Gasto.objects.create(
+        viaje=viaje,
+        pagador=usuario,
+        nombre=nombre,
+        descripcion=descripcion,
+        importe_total=importe_total,
+    )
+
+    # Incluir participantes (siempre todos)
+    ParticipanteGasto.objects.bulk_create([
+        ParticipanteGasto(gasto=gasto, usuario=u) for u in participantes
+    ])
+
+    # Cuota por persona (base)
+    share = (importe_total / Decimal(n)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    # Ajuste por redondeo: que la suma de splits sea EXACTAMENTE importe_total
+    splits = [share for _ in range(n)]
+    suma = sum(splits, Decimal("0.00"))
+    ajuste = (importe_total - suma).quantize(Decimal("0.01"))
+
+    # Aplicamos ajuste al pagador (puedes cambiarlo al último si prefieres)
+    idx_pagador = next((i for i, u in enumerate(participantes) if u.id == usuario.id), 0)
+    splits[idx_pagador] = (splits[idx_pagador] + ajuste).quantize(Decimal("0.01"))
+
+    GastoSplit.objects.bulk_create([
+        GastoSplit(gasto=gasto, usuario=u, importe=splits[i])
+        for i, u in enumerate(participantes)
+    ])
+
+    messages.success(request, "Gasto creado y repartido ✅")
+    return redirect("core:detalle_gasto", viaje_id=viaje.id, gasto_id=gasto.id)
+
+
+@require_GET
+@login_required_usuario
+def gastos_viaje(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not asegurar_participante_y_privado(request, viaje, usuario):
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    gastos = (Gasto.objects
+              .filter(viaje=viaje)
+              .select_related("pagador")
+              .order_by("-fecha_creacion"))
+
+    return render(request, "core/gastos_viaje.html", {
+        "usuario_actual": usuario,
+        "viaje": viaje,
+        "gastos": gastos,
+    })
+
+
+@require_GET
+@login_required_usuario
+def detalle_gasto(request, viaje_id, gasto_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not asegurar_participante_y_privado(request, viaje, usuario):
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    gasto = get_object_or_404(Gasto, id=gasto_id, viaje=viaje)
+
+    splits = (GastoSplit.objects
+              .filter(gasto=gasto)
+              .select_related("usuario")
+              .order_by("usuario__username"))
+
+    # Para mostrar "Neto en este gasto":
+    # neto = (pagó? total : 0) - cuota
+    filas = []
+    for s in splits:
+        pago = gasto.importe_total if s.usuario_id == gasto.pagador_id else Decimal("0.00")
+        neto = (pago - s.importe).quantize(Decimal("0.01"))
+        filas.append({
+            "usuario": s.usuario,
+            "cuota": s.importe,
+            "pago": pago,
+            "neto": neto,
+        })
+
+    cuota_por_persona = (gasto.importe_total / Decimal(len(filas))).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return render(request, "core/detalle_gasto.html", {
+        "usuario_actual": usuario,
+        "viaje": viaje,
+        "gasto": gasto,
+        "cuota_por_persona": cuota_por_persona,
+        "filas": filas,
+    })
+
+@require_GET
+@login_required_usuario
+def balance_viaje(request, viaje_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+
+    if not asegurar_participante_y_privado(request, viaje, usuario):
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    participantes = list(viaje.participantes.all())
+
+    totales_pagado = {u.id: Decimal("0.00") for u in participantes}
+    totales_debia = {u.id: Decimal("0.00") for u in participantes}
+
+    # pagado
+    for g in Gasto.objects.filter(viaje=viaje):
+        totales_pagado[g.pagador_id] += g.importe_total
+
+    # debia (splits)
+    for s in GastoSplit.objects.filter(gasto__viaje=viaje):
+        totales_debia[s.usuario_id] += s.importe
+
+    balances = {}
+    resumen = []
+
+    for u in participantes:
+        bal = (totales_pagado[u.id] - totales_debia[u.id]).quantize(Decimal("0.01"))
+        balances[u] = bal
+        resumen.append({
+            "usuario": u,
+            "pagado": totales_pagado[u.id],
+            "debia": totales_debia[u.id],
+            "balance": bal,
+        })
+
+    # Clasificación
+    acreedores = [r for r in resumen if r["balance"] > 0]
+    deudores = [r for r in resumen if r["balance"] < 0]
+
+    # Liquidación sugerida
+    transferencias = liquidar_balances(balances)
+
+    return render(request, "core/balance_viaje.html", {
+        "usuario_actual": usuario,
+        "viaje": viaje,
+        "resumen": resumen,
+        "acreedores": acreedores,
+        "deudores": deudores,
+        "transferencias": transferencias,
+    })
+
+
+
+@require_POST
+@login_required_usuario
+def eliminar_gasto(request, viaje_id, gasto_id):
+    usuario = get_usuario_actual(request)
+    viaje = get_object_or_404(Viaje, id=viaje_id)
+    gasto = get_object_or_404(Gasto, id=gasto_id, viaje=viaje)
+
+    # Solo viajes privados
+    if viaje.visibilidad != Viaje.Visibilidad.PRIVADO:
+        messages.error(request, "Los gastos solo están disponibles en viajes privados.")
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
+
+    # Solo participantes
+    if not viaje.participantes.filter(id=usuario.id).exists():
+        messages.error(request, "No eres participante de este viaje.")
+        return redirect("core:lista_viajes")
+
+    # 🔴 SOLO el pagador puede eliminar
+    if gasto.pagador_id != usuario.id:
+        messages.error(request, "Solo el creador del gasto puede eliminarlo.")
+        return redirect("core:detalle_gasto", viaje_id=viaje.id, gasto_id=gasto.id)
+
+    gasto.delete()
+    messages.success(request, "Gasto eliminado correctamente ✅")
+    return redirect("core:gastos_viaje", viaje_id=viaje.id)

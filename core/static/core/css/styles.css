@@ -99,6 +99,8 @@ a:hover{ text-decoration: underline; }
   background: var(--brand);
   color:white;
   font-weight:700;
+  font-family: inherit;
+  font-size: inherit;
   cursor:pointer;
   box-shadow: 0 8px 18px rgba(37,99,235,.20);
 }
@@ -113,13 +115,15 @@ a:hover{ text-decoration: underline; }
 .btn-danger:hover{ filter: brightness(.95); }
 
 .btn-soft{
-  background: var(--brand-soft);
-  color: var(--brand);
-  border-color: rgba(37,99,235,.20);
+  background: rgba(37,99,235,.08);
+  color: #1d4ed8;
+  border: 1px solid rgba(37,99,235,.25);
   box-shadow: none;
+  font-weight: 700;
 }
+
 .btn-soft:hover{
-  background: #dbeafe;
+  background: rgba(37,99,235,.16);
 }
 
 /* Cards */
@@ -172,7 +176,7 @@ h2{ font-size: 20px; margin: 10px 0 10px; }
 p{ line-height: 1.6; }
 
 /* Forms */
-form:not(.chat-composer):not(.invite-form){
+form:not(.chat-composer):not(.invite-form):not(.inline-form){
   max-width: 680px;
   background: var(--card);
   border:1px solid var(--border);
@@ -181,6 +185,13 @@ form:not(.chat-composer):not(.invite-form){
   box-shadow: var(--shadow-soft);
 }
 form p{ margin: 10px 0; }
+
+form.inline-form{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
 
 label{
   font-weight: 750;
@@ -1205,4 +1216,166 @@ input:focus, select:focus, textarea:focus{
   font-size: inherit !important;
   font-weight: 600 !important;
   color: inherit !important;
+}
+
+
+
+.trip-card-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #2563eb;
+  font-weight: 500;
+  padding: 8px 12px;
+}
+
+.badge-muted {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+
+/* =========================
+   BALANCE (Tricount style)
+========================= */
+
+.balance-item{
+  align-items: flex-start;
+}
+
+.balance-left{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.balance-avatar{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 10px 22px rgba(37,99,235,.18);
+  flex: 0 0 40px;
+}
+
+.balance-meta{
+  min-width: 0;
+}
+
+.balance-userline{
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.balance-stats{
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.balance-right{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 10px;
+}
+
+.balance-chip{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: 950;
+  letter-spacing: .2px;
+  border: 1px solid rgba(15,23,42,.10);
+  background: rgba(15,23,42,.04);
+  min-width: 92px;
+  text-align: center;
+}
+
+.balance-chip-pos{
+  background: rgba(22,163,74,.10);
+  border-color: rgba(22,163,74,.22);
+  color: #065f46;
+}
+
+.balance-chip-neg{
+  background: rgba(220,38,38,.10);
+  border-color: rgba(220,38,38,.22);
+  color: #991b1b;
+}
+
+.balance-chip-zero{
+  background: rgba(15,23,42,.06);
+  border-color: rgba(15,23,42,.12);
+  color: #0f172a;
+}
+
+.balance-chip-pay{
+  background: rgba(37,99,235,.10);
+  border-color: rgba(37,99,235,.22);
+  color: #1d4ed8;
+}
+
+/* pagos */
+.pago-item{
+  align-items: center;
+}
+.pago-line{
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pago-user{
+  color: #0f172a;
+}
+.pago-arrow{
+  color: #94a3b8;
+  font-weight: 900;
+}
+.pago-amount{
+  flex: 0 0 auto;
+}
+
+/* acciones */
+.balance-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }

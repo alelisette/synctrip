@@ -1,0 +1,98 @@
+{% extends "core/base.html" %}
+{% block title %}Mi perfil - SyncTrip{% endblock %}
+{% block content %}
+
+<div class="page-wrap">
+  <div class="page-head">
+    <h1 class="page-title">Mi perfil</h1>
+    <p class="page-subtitle">Tus datos, en una sola pantalla.</p>
+  </div>
+
+  {% if messages %}
+    <div class="stack">
+      {% for m in messages %}
+        <div class="notice {% if 'error' in m.tags %}notice-bad{% else %}notice-ok{% endif %}">
+          {{ m }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-header profile-head">
+        <div>
+          <h2 class="section-title">{{ usuario.nombre }} {{ usuario.apellidos }}</h2>
+          <div class="muted">@{{ usuario.username }}</div>
+        </div>
+        <span class="pill pill-soft">Editable</span>
+      </div>
+
+      <div class="card-body">
+        <details class="profile-details" open>
+          <summary class="profile-summary">
+            <span>Datos del usuario</span>
+            <span class="muted">Pulsa para contraer/expandir</span>
+          </summary>
+
+          <form method="post" class="stack inline-form" id="perfil-form">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button class="btn btn-save" id="btn-guardar" type="submit" disabled>
+              Guardar cambios
+            </button>
+
+            <a class="btn btn-ghost" href="{% url 'core:borrar_cuenta' %}">
+              Borrar cuenta
+            </a>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="card-header">
+        <h2 class="section-title">Acceso rápido</h2>
+        <p class="section-subtitle">Gestiona amistades e invitaciones.</p>
+      </div>
+      <div class="card-body stack">
+        <a class="btn" href="{% url 'core:solicitudes' %}">Ir a Solicitudes</a>
+        <a class="btn btn-ghost" href="{% url 'core:lista_viajes' %}">Ver viajes</a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById("perfil-form");
+  const btn = document.getElementById("btn-guardar");
+  if(!form || !btn) return;
+
+  const initial = new FormData(form);
+  const snap = {};
+  for (const [k,v] of initial.entries()) snap[k] = v;
+
+  function isDirty(){
+    const now = new FormData(form);
+    for (const [k,v] of now.entries()){
+      if ((snap[k] ?? "") !== v) return true;
+    }
+    return false;
+  }
+
+  function sync(){
+    const dirty = isDirty();
+    btn.disabled = !dirty;
+    btn.classList.toggle("is-dirty", dirty);
+  }
+
+  form.addEventListener("input", sync);
+  form.addEventListener("change", sync);
+  sync();
+})();
+</script>
+
+{% endblock %}

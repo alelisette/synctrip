@@ -1,0 +1,67 @@
+{% extends "core/base.html" %}
+
+{% block title %}Detalle gasto - SyncTrip{% endblock %}
+
+{% block content %}
+  <h1 class="page-title page-title-sm">{{ gasto.nombre }}</h1>
+  <p class="muted">
+    Pagó <strong>@{{ gasto.pagador.username }}</strong> • Total {{ gasto.importe_total }} €
+  </p>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Reparto</h2>
+      <p class="section-subtitle">Incluye a todos los miembros del viaje.</p>
+    </div>
+    <div class="card-body">
+      <p><strong>Cuota por persona:</strong> {{ cuota_por_persona }} €</p>
+
+      <table style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr style="text-align:left;">
+            <th>Usuario</th>
+            <th>Debía</th>
+            <th>Pagó</th>
+            <th>Neto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in filas %}
+            <tr>
+              <td>@{{ f.usuario.username }}</td>
+              <td>{{ f.cuota }} €</td>
+              <td>{{ f.pago }} €</td>
+              <td>
+                {% if f.neto > 0 %}
+                  <strong>+{{ f.neto }} €</strong>
+                {% elif f.neto < 0 %}
+                  <strong>{{ f.neto }} €</strong>
+                {% else %}
+                  0.00 €
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <p class="back-link" style="margin-top:14px;">
+    <a href="{% url 'core:gastos_viaje' viaje.id %}">← Volver a gastos</a>
+    &nbsp;•&nbsp;
+    <a href="{% url 'core:balance_viaje' viaje.id %}">Ver balance final →</a>
+  </p>
+
+  {% if usuario_actual.id == gasto.pagador.id %}
+    <form method="post"
+          action="{% url 'core:eliminar_gasto' viaje.id gasto.id %}"
+          onsubmit="return confirm('¿Seguro que quieres eliminar este gasto?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">
+        Eliminar gasto
+      </button>
+    </form>
+  {% endif %}
+{% endblock %}

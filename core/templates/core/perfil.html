@@ -48,7 +48,7 @@
             <p class="notice notice-ok">{{ success }}</p>
           {% endif %}
 
-          <form method="post" action="{% url 'core:enviar_solicitud' %}" class="stack">
+          <form method="post" action="{% url 'core:enviar_solicitud' %}" class="stack inline-form">
             {% csrf_token %}
             <label for="username_destino">Username del usuario</label>
             <input id="username_destino" name="username_destino" type="text" placeholder="Ej: maria_123" required>

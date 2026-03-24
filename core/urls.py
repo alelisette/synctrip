@@ -44,8 +44,24 @@ urlpatterns = [
         views.actualizar_itinerario_publico,
         name="actualizar_itinerario_publico",
     ),
+    path("solicitudes/", views.solicitudes, name="solicitudes"),
 
+    path(
+        "viajes/<int:viaje_id>/unirme/",
+        views.unirse_a_viaje,
+        name="unirse_a_viaje"
+    ),
 
+    path("viajes/<int:viaje_id>/gastos/", views.gastos_viaje, name="gastos_viaje"),
+    path("viajes/<int:viaje_id>/gastos/crear/", views.crear_gasto, name="crear_gasto"),
+    path("viajes/<int:viaje_id>/gastos/<int:gasto_id>/", views.detalle_gasto, name="detalle_gasto"),
+    path("viajes/<int:viaje_id>/balance/", views.balance_viaje, name="balance_viaje"),
+
+    path(
+    "viajes/<int:viaje_id>/gastos/<int:gasto_id>/eliminar/",
+    views.eliminar_gasto,
+    name="eliminar_gasto"
+    ),
 
 ]
 

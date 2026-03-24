@@ -210,3 +210,51 @@ class MensajeGrupoChat(models.Model):
 
     def __str__(self):
         return f"{self.grupo.viaje_id} @{self.autor.username}: {self.contenido[:30]}"
+    
+
+    from django.db import models
+from decimal import Decimal
+
+class Gasto(models.Model):
+    viaje = models.ForeignKey("Viaje", on_delete=models.CASCADE, related_name="gastos")
+    pagador = models.ForeignKey("Usuario", on_delete=models.CASCADE, related_name="gastos_pagados")
+
+    nombre = models.CharField(max_length=120)  # antes: titulo
+    descripcion = models.TextField(blank=True, default="")
+    importe_total = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.importe_total}€) - Viaje {self.viaje_id}"
+
+
+class ParticipanteGasto(models.Model):
+    """
+    Quién está incluido en el gasto.
+    En tu caso, SIEMPRE serán todos los participantes del viaje privado.
+    """
+    gasto = models.ForeignKey("Gasto", on_delete=models.CASCADE, related_name="participantes")
+    usuario = models.ForeignKey("Usuario", on_delete=models.CASCADE, related_name="participaciones_en_gastos")
+
+    class Meta:
+        unique_together = ("gasto", "usuario")
+
+    def __str__(self):
+        return f"@{self.usuario.username} incluido en gasto {self.gasto_id}"
+
+
+class GastoSplit(models.Model):
+    """
+    Cuota que debe pagar cada usuario por un gasto.
+    IMPORTANTE: incluir también al pagador para que el balance sea correcto.
+    """
+    gasto = models.ForeignKey("Gasto", on_delete=models.CASCADE, related_name="splits")
+    usuario = models.ForeignKey("Usuario", on_delete=models.CASCADE, related_name="splits_gastos")
+    importe = models.DecimalField(max_digits=10, decimal_places=2)
+    pagado = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("gasto", "usuario")
+
+    def __str__(self):
+        return f"{self.gasto_id}: @{self.usuario.username} debe {self.importe}€"

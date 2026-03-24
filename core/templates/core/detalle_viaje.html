@@ -45,7 +45,7 @@
             <p class="muted">El creador puede crearlo cuando quiera.</p>
 
             {% if es_creador %}
-              <form method="post" action="{% url 'core:crear_grupo_chat' viaje.id %}">
+              <form method="post" action="{% url 'core:crear_grupo_chat' viaje.id %}" class="inline-form">
                 {% csrf_token %}
                 <button type="submit" class="btn">Crear grupo de chat</button>
               </form>
@@ -138,6 +138,19 @@
       </div>
     </div>
 
+    {% if viaje.visibilidad == "PRIVADO" %}
+      <div class="card sidebar-card">
+        <div class="card-header">
+          <h2 class="section-title">Gastos</h2>
+          <p class="section-subtitle">Gastos compartidos del viaje.</p>
+        </div>
+        <div class="card-body">
+          <a class="btn btn-soft" href="{% url 'core:gastos_viaje' viaje.id %}">Ver / añadir gastos</a>
+          <a class="btn btn-ghost" href="{% url 'core:balance_viaje' viaje.id %}" style="margin-left:8px;">Balance final</a>
+        </div>
+      </div>
+    {% endif %}
+
     <!-- Itinerario del viaje (visible para todos, editable solo creador) -->
     <div class="card sidebar-card itinerary-card">
       <div class="card-header itinerary-header">
@@ -153,7 +166,7 @@
 
       <div class="card-body">
         {% if es_creador %}
-          <form method="post" action="{% url 'core:actualizar_itinerario_publico' viaje.id %}">
+          <form method="post" action="{% url 'core:actualizar_itinerario_publico' viaje.id %}" class="inline-form">
             {% csrf_token %}
             <textarea
               name="contenido"
@@ -210,6 +223,25 @@
               class="invite-input"
             >
             <button type="submit" class="btn">Enviar invitación</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Participantes -->
+    {% if viaje.visibilidad == "PRIVADO" and usuario_actual and usuario_actual in participantes %}
+      <div class="card sidebar-card">
+        <div class="card-header">
+          <h2 class="section-title">Añadir gasto</h2>
+          <p class="section-subtitle">Se reparte por igual entre los participantes.</p>
+        </div>
+        <div class="card-body">
+          <form class="inline-form" method="post" action="{% url 'core:crear_gasto' viaje.id %}">
+            {% csrf_token %}
+            <input name="nombre" placeholder="Ej: Cena en Tagliatella" required>
+            <input name="importe_total" placeholder="Ej: 80.00" required>
+            <textarea name="descripcion" placeholder="Opcional"></textarea>
+            <button class="btn btn-soft" type="submit">Guardar gasto</button>
           </form>
         </div>
       </div>

@@ -1,0 +1,110 @@
+{% extends "core/base.html" %}
+
+{% block title %}Balance final - SyncTrip{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1 class="page-title">Balance final</h1>
+    <p class="page-subtitle">
+      {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }}) · Viaje privado
+    </p>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- ===== Columna izquierda: resumen por usuario ===== -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="section-title">Balances</h2>
+        <p class="section-subtitle">Pagado − Deuda</p>
+      </div>
+
+      <div class="card-body">
+        {% if resumen %}
+          <ul class="list-cards">
+            {% for r in resumen %}
+              <li class="list-item balance-item">
+                <div class="balance-left">
+                  <div class="balance-avatar" aria-hidden="true">
+                    {{ r.usuario.nombre|first|upper }}{{ r.usuario.apellidos|first|upper }}
+                  </div>
+
+                  <div class="balance-meta">
+                    <div class="balance-userline">
+                      <strong>@{{ r.usuario.username }}</strong>
+                      <span class="muted">{{ r.usuario.nombre }} {{ r.usuario.apellidos }}</span>
+                    </div>
+
+                    <div class="balance-stats">
+                      <span class="pill pill-soft">Pagó: <strong>{{ r.pagado }}€</strong></span>
+                      <span class="pill pill-soft">Debe: <strong>{{ r.debia }}€</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="balance-right">
+                  {% if r.balance > 0 %}
+                    <span class="balance-chip balance-chip-pos">+{{ r.balance }}€</span>
+                    <span class="badge badge-publico">Acreedor</span>
+                  {% elif r.balance < 0 %}
+                    <span class="balance-chip balance-chip-neg">{{ r.balance }}€</span>
+                    <span class="badge badge-privado">Deudor</span>
+                  {% else %}
+                    <span class="balance-chip balance-chip-zero">0.00€</span>
+                    <span class="badge">OK</span>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">Aún no hay datos para calcular el balance.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===== Columna derecha: quién paga a quién ===== -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="section-title">Quién paga a quién</h2>
+        <p class="section-subtitle">Liquidación sugerida con pocas transferencias.</p>
+      </div>
+
+      <div class="card-body">
+        {% if transferencias %}
+          <ul class="list-cards">
+            {% for t in transferencias %}
+              <li class="list-item pago-item">
+                <div class="pago-main">
+                  <div class="pago-line">
+                    <span class="pago-user">@{{ t.deudor.username }}</span>
+                    <span class="pago-arrow">→</span>
+                    <span class="pago-user">@{{ t.acreedor.username }}</span>
+                  </div>
+                  <div class="muted">Transferencia sugerida</div>
+                </div>
+
+                <div class="pago-amount">
+                  <span class="balance-chip balance-chip-pay">{{ t.importe }}€</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">
+            <p><strong>Todo equilibrado </strong></p>
+            <p class="muted">No hay transferencias necesarias.</p>
+          </div>
+        {% endif %}
+
+        <div style="height:12px"></div>
+
+        <div class="balance-actions">
+          <a class="btn btn-soft" href="{% url 'core:gastos_viaje' viaje.id %}">Ver gastos</a>
+          <a class="btn btn-ghost" href="{% url 'core:detalle_viaje' viaje.id %}">Volver al viaje</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

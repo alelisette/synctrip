@@ -1,0 +1,81 @@
+{% extends "core/base.html" %}
+
+{% block title %}Gastos - SyncTrip{% endblock %}
+
+{% block content %}
+  <h1 class="page-title page-title-sm">Gastos del viaje</h1>
+  <p class="muted">{{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})</p>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Añadir gasto</h2>
+      <p class="section-subtitle">Se reparte automáticamente entre todos los miembros.</p>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'core:crear_gasto' viaje.id %}">
+        {% csrf_token %}
+        <p>
+          <label>Nombre</label>
+          <input name="nombre" placeholder="Ej: TICKETS BUS" required>
+        </p>
+        <p>
+          <label>Importe total (€)</label>
+          <input name="importe_total" placeholder="Ej: 80.00" required>
+        </p>
+        <p>
+          <label>Descripción (opcional)</label>
+          <textarea name="descripcion" rows="3" placeholder="Opcional"></textarea>
+        </p>
+
+        <button class="btn btn-soft" type="submit">Guardar gasto</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="height:16px"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Historial</h2>
+    </div>
+    <div class="card-body">
+      {% if gastos %}
+        <ul class="list-cards">
+          {% for g in gastos %}
+            <li class="list-item">
+              <div class="list-main">
+                <div class="list-title">{{ g.nombre }}</div>
+                <div class="list-meta">
+                  <span class="muted">Pagó:</span>
+                  <strong>@{{ g.pagador.username }}</strong>
+                  <span class="muted">•</span>
+                  <span>{{ g.importe_total }} €</span>
+                </div>
+              </div>
+
+              <div class="list-actions">
+                <a class="btn btn-sm btn-ghost" href="{% url 'core:detalle_gasto' viaje.id g.id %}">
+                  Ver detalle
+                </a>
+                {% if usuario_actual.id == g.pagador.id or usuario_actual.id == viaje.creador.id %}
+                  <form method="post" action="{% url 'core:eliminar_gasto' viaje.id g.id %}"
+                        onsubmit="return confirm('¿Eliminar este gasto?');"
+                        style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                  </form>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Aún no hay gastos.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="back-link" style="margin-top:14px;">
+    <a href="{% url 'core:balance_viaje' viaje.id %}">Ver balance final →</a>
+  </p>
+{% endblock %}
