@@ -1379,3 +1379,617 @@ input:focus, select:focus, textarea:focus{
   gap: 10px;
   flex-wrap: wrap;
 }
+
+.gastos-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+
+.gastos-footer-actions{
+  margin-top:14px;
+  display:flex;
+  justify-content:flex-start;
+}
+
+/* ===== GASTOS ===== */
+
+.gastos-page{
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.gastos-header{
+  margin-bottom: 16px;
+}
+
+.gastos-layout{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.gastos-form-card .card-body,
+.gastos-history-card .card-body{
+  padding-top: 8px;
+}
+
+.gastos-form{
+  max-width: 760px;
+}
+
+.gastos-form label{
+  margin-top: 8px;
+}
+
+.gastos-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.gastos-actions .btn{
+  box-shadow: none;
+}
+
+.gastos-footer-actions{
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Botón ghost unificado */
+.btn-ghost{
+  background: #ffffff;
+  color: #2563eb;
+  border: 1px solid #bfd3ff;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(37,99,235,.08);
+}
+
+.btn-ghost:hover{
+  background: #f8fbff;
+  text-decoration: none;
+}
+
+/* =========================
+   GASTOS - LAYOUT NUEVO
+========================= */
+
+.gastos-page{
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.gastos-header{
+  margin-bottom: 18px;
+}
+
+.gastos-layout{
+  display: grid;
+  grid-template-columns: 0.95fr 1.25fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.gastos-form-card,
+.gastos-history-card{
+  border-radius: 22px;
+}
+
+.gastos-form,
+.gastos-filters{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gastos-form label,
+.gastos-filters label{
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 2px;
+}
+
+.gastos-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.gastos-actions-filters{
+  margin-top: 14px;
+  margin-bottom: 18px;
+}
+
+.gastos-filters{
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8eefc;
+  margin-bottom: 18px;
+}
+
+.gastos-filters-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.gastos-list{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.gasto-item{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.gasto-main{
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.gasto-avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid #d8e4ff;
+  background: #f8fbff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.gasto-content{
+  min-width: 0;
+}
+
+.gasto-topline{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.gasto-price{
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.gasto-description{
+  margin-top: 8px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.btn-ghost{
+  background: #ffffff;
+  color: #2563eb;
+  border: 1px solid #bfd3ff;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.btn-ghost:hover{
+  background: #f8fbff;
+  text-decoration: none;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 980px){
+  .gastos-layout{
+    grid-template-columns: 1fr;
+  }
+
+  .gastos-filters-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px){
+  .gasto-item{
+    flex-direction: column;
+  }
+
+  .gasto-topline{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .list-actions{
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .list-actions .btn,
+  .list-actions form{
+    width: 100%;
+  }
+
+  .list-actions form button{
+    width: 100%;
+  }
+
+  .gastos-actions .btn{
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ===== FIX BOTONES HISTORIAL GASTOS ===== */
+
+.gasto-actions-side{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.gasto-actions-side .btn,
+.gasto-actions-side button{
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.gasto-actions-side form{
+  margin: 0;
+  display: inline-flex;
+}
+
+.gasto-actions-side .btn-sm{
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.gasto-actions-side .btn-danger{
+  background: #ef4444;
+  border: none;
+  color: white;
+}
+
+.gasto-actions-side .btn-danger:hover{
+  background: #dc2626;
+}
+
+.gasto-actions-side .btn-ghost{
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #bfd3ff;
+}
+
+.gasto-actions-side .btn-ghost:hover{
+  background: #f8fbff;
+}
+
+/* móvil */
+@media (max-width: 640px){
+  .gasto-actions-side{
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gasto-actions-side .btn,
+  .gasto-actions-side form,
+  .gasto-actions-side form button{
+    width: 100%;
+  }
+}
+
+.gasto-actions-side{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gasto-actions-side .btn,
+.gasto-actions-side button{
+  padding: 6px 10px;
+  font-size: 13px;
+  height: auto;
+  min-height: unset;
+}
+
+/* ===== OVERRIDE FINAL: botones historial gastos ===== */
+
+.gastos-history-card .list-item{
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.gastos-history-card .list-main,
+.gastos-history-card .gasto-main{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.gastos-history-card .list-actions{
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  flex: 0 0 118px !important;
+  margin-left: 8px !important;
+}
+
+.gastos-history-card .list-actions form{
+  margin: 0 !important;
+  display: block !important;
+}
+
+.gastos-history-card .list-actions .btn,
+.gastos-history-card .list-actions .btn-sm,
+.gastos-history-card .list-actions form button{
+  width: 118px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+}
+
+.gastos-history-card .btn-danger{
+  background: #ef4444 !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.gastos-history-card .btn-ghost{
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 1px solid #bfd3ff !important;
+}
+
+.gastos-history-card .gasto-item{
+  padding: 10px 12px !important;
+}
+
+.gastos-history-card .gasto-topline{
+  margin-bottom: 2px !important;
+}
+
+.gastos-history-card .gasto-description{
+  margin-top: 2px !important;
+  line-height: 1.3 !important;
+}
+
+@media (max-width: 700px){
+  .gastos-history-card .list-item{
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .gastos-history-card .list-actions{
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .gastos-history-card .list-actions .btn,
+  .gastos-history-card .list-actions .btn-sm,
+  .gastos-history-card .list-actions form,
+  .gastos-history-card .list-actions form button{
+    width: 100% !important;
+  }
+}
+
+/* =========================
+   DETALLE GASTO
+========================= */
+
+.detalle-gasto-page{
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.detalle-gasto-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.detalle-gasto-actions-top{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-gasto-summary-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.summary-box{
+  border: 1px solid #e5edff;
+  background: #f8fbff;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.summary-label{
+  font-size: 0.92rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.summary-value{
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.detalle-gasto-description{
+  color: #475569;
+  line-height: 1.5;
+}
+
+.detalle-gasto-list{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-gasto-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e8eefc;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.detalle-gasto-user{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detalle-gasto-avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid #d8e4ff;
+  background: #f8fbff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.detalle-gasto-username{
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.detalle-gasto-metrics{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.metric-box{
+  border: 1px solid #eef2ff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #fafcff;
+}
+
+.metric-label{
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.metric-value{
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.metric-positive{
+  color: #15803d;
+}
+
+.metric-negative{
+  color: #b91c1c;
+}
+
+.detalle-gasto-danger-card .card-body{
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (max-width: 900px){
+  .detalle-gasto-header{
+    flex-direction: column;
+  }
+
+  .detalle-gasto-summary-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .detalle-gasto-row{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detalle-gasto-metrics{
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px){
+  .detalle-gasto-actions-top{
+    width: 100%;
+  }
+
+  .detalle-gasto-actions-top .btn{
+    width: 100%;
+    text-align: center;
+  }
+}
+.detalle-gasto-actions-top{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inline-form{
+  display: inline;
+  margin: 0;
+  padding: 0;
+}

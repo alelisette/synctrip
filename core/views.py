@@ -1056,7 +1056,6 @@ def crear_gasto(request, viaje_id):
     messages.success(request, "Gasto creado y repartido ✅")
     return redirect("core:detalle_gasto", viaje_id=viaje.id, gasto_id=gasto.id)
 
-
 @require_GET
 @login_required_usuario
 def gastos_viaje(request, viaje_id):
@@ -1066,15 +1065,40 @@ def gastos_viaje(request, viaje_id):
     if not asegurar_participante_y_privado(request, viaje, usuario):
         return redirect("core:detalle_viaje", viaje_id=viaje.id)
 
-    gastos = (Gasto.objects
-              .filter(viaje=viaje)
-              .select_related("pagador")
-              .order_by("-fecha_creacion"))
+    gastos = (
+        Gasto.objects
+        .filter(viaje=viaje)
+        .select_related("pagador")
+        .order_by("-fecha_creacion")
+    )
+
+    # ===== Filtros =====
+    username = (request.GET.get("username") or "").strip()
+    precio_min = (request.GET.get("precio_min") or "").strip().replace(",", ".")
+    precio_max = (request.GET.get("precio_max") or "").strip().replace(",", ".")
+
+    if username:
+        gastos = gastos.filter(pagador__username__icontains=username)
+
+    try:
+        if precio_min:
+            gastos = gastos.filter(importe_total__gte=Decimal(precio_min))
+    except Exception:
+        messages.error(request, "El precio mínimo no es válido.")
+
+    try:
+        if precio_max:
+            gastos = gastos.filter(importe_total__lte=Decimal(precio_max))
+    except Exception:
+        messages.error(request, "El precio máximo no es válido.")
 
     return render(request, "core/gastos_viaje.html", {
         "usuario_actual": usuario,
         "viaje": viaje,
         "gastos": gastos,
+        "filtro_username": username,
+        "filtro_precio_min": precio_min,
+        "filtro_precio_max": precio_max,
     })
 
 
