@@ -413,31 +413,10 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* =========================================
-   LISTA DE VIAJES — 2 columnas, tarjetas compactas
-   (sin romper el resto de páginas)
+   LISTA DE VIAJES — Estilos específicos para lista
 ========================================= */
 
 /* Usa en template: <div class="trip-grid-cards"> ... </div> */
-.trip-grid-cards{
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  align-items: start;
-}
-
-.trip-card{
-  padding: 14px;
-}
-
-.trip-card-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom: 10px;
-}
 
 .trip-card-title{
   margin: 0;
@@ -507,12 +486,6 @@ input:focus, select:focus, textarea:focus{
   font-size: 13px;
   color: var(--muted);
   font-weight: 800;
-}
-
-.trip-card-footer{
-  margin-top: 12px;
-  display:flex;
-  justify-content:flex-start;
 }
 
 .trip-btn-detalle{
@@ -1992,4 +1965,361 @@ input:focus, select:focus, textarea:focus{
   display: inline;
   margin: 0;
   padding: 0;
+}
+
+
+
+/* Estilos generales */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f7f7f7;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Filtros - Diseño plano y alineado */
+.filters-container {
+  background: transparent;
+  border: none;
+  padding: 16px 0;
+  margin-bottom: 32px;
+  box-shadow: none;
+}
+
+.filters-form {
+  display: block;
+}
+
+.filters-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.filter-group label {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.filter-group input {
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text);
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.filter-group input:focus {
+  border-color: var(--brand);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.price-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.slider {
+  flex: 1;
+  min-width: 150px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.25) 0%, var(--brand) 100%);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--brand);
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--brand);
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+#precio_value {
+  font-weight: 700;
+  color: var(--brand);
+  font-size: 14px;
+  min-width: 60px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-filtrar {
+  margin-left: auto;
+  padding: 10px 24px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-filtrar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+}
+
+.btn-filtrar:active {
+  transform: translateY(0);
+}
+
+/* Responsivo para móvil */
+@media (max-width: 1024px) {
+  .filters-row {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-group input {
+    min-width: 140px;
+  }
+
+  .price-slider-wrapper {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filters-container {
+    padding: 16px 0;
+  }
+
+  .filters-row {
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group input {
+    min-width: 100%;
+  }
+
+  .btn-filtrar {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .price-slider-wrapper {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .slider {
+    width: 100%;
+  }
+}
+
+/* Estilos para las tarjetas de los viajes - Mejorado */
+.trip-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.trip-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  border-color: var(--brand-soft);
+}
+
+.trip-card-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trip-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.trip-title a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.trip-title a:hover {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.trip-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 100px;
+}
+
+.trip-meta {
+  margin-bottom: 18px;
+  flex: 1;
+}
+
+.trip-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.trip-meta-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.trip-meta-label {
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 70px;
+  text-transform: capitalize;
+}
+
+.trip-meta-value {
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.trip-price {
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.trip-price-suffix {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.trip-username {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trip-card-footer {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.trip-card-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-ghost {
+  flex: 1;
+  background: transparent;
+  border: 1.5px solid var(--brand);
+  color: var(--brand);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-ghost:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.btn-ghost:active {
+  transform: scale(0.98);
+}
+
+.badge-muted {
+  background: #f0f4f8;
+  color: #64748b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
 }

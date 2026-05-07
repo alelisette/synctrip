@@ -3,78 +3,119 @@
 {% block title %}Inicio - SyncTrip{% endblock %}
 
 {% block content %}
-  <h1 class="page-title page-title-sm">Viajes públicos</h1>
-  <p class="muted">Explora viajes públicos y únete con tus amigos.</p>
+  <div class="container">
+    <h1 class="page-title">Viajes públicos</h1>
+    <p class="muted">Explora viajes públicos y únete con tus amigos.</p>
 
-  {% if viajes %}
-    <div class="trip-grid-cards">
-      {% for viaje in viajes %}
-        <article class="trip-card">
-          <header class="trip-card-header">
-            <h2 class="trip-title">
-              <a href="{% url 'core:detalle_viaje' viaje.id %}">
-                {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})
-              </a>
-            </h2>
+    <!-- Formulario de filtros -->
+    <div class="filters-container">
+      <form method="get" action="{% url 'core:home' %}" class="filters-form">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label for="pais">País:</label>
+            <input type="text" id="pais" name="pais" value="{{ request.GET.pais }}" placeholder="Ej. Colombia" style="max-width: 150px;">
+          </div>
 
-            <div class="trip-badges">
-              <span class="badge badge-estado">{{ viaje.get_estado_viaje_display }}</span>
-              <span class="badge badge-publico">Público</span>
-            </div>
-          </header>
+          <div class="filter-group">
+            <label for="ciudad">Ciudad:</label>
+            <input type="text" id="ciudad" name="ciudad" value="{{ request.GET.ciudad }}" placeholder="Ej. Bogotá" style="max-width: 150px;">
+          </div>
 
-          <div class="trip-meta">
-            <div class="trip-meta-row">
-              <span class="trip-meta-label">Fechas: </span>
-              <span class="trip-meta-value">
-                {{ viaje.fecha_ida|date:"d M Y" }} → {{ viaje.fecha_vuelta|date:"d M Y" }}
-              </span>
-            </div>
-
-            <div class="trip-meta-row">
-              <span class="trip-meta-label">Precio: </span>
-              <span class="trip-price">
-                {{ viaje.precio_persona }} € <span class="trip-price-suffix">/ persona</span>
-              </span>
-            </div>
-
-            <div class="trip-meta-row">
-              <span class="trip-meta-label">Creador: </span>
-              <span class="trip-meta-value">
-                {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }}
-                <span class="trip-username">@{{ viaje.creador.username }}</span>
-              </span>
+          <!-- Control deslizante para el precio -->
+          <div class="filter-group">
+            <label for="precio_max">Precio:</label>
+            <div class="price-slider-wrapper">
+              <input type="range" id="precio_max" name="precio_max" min="0" max="7000" value="{{ request.GET.precio_max|default:3500 }}" class="slider" oninput="updatePriceValue()">
+              <span id="precio_value">{{ request.GET.precio_max|default:3500 }} €</span>
             </div>
           </div>
 
-          <footer class="trip-card-footer trip-card-actions">
-            <a class="btn btn-ghost" href="{% url 'core:detalle_viaje' viaje.id %}">
-              Ver detalles
-            </a>
-
-            {% if usuario_actual %}
-              {% if usuario_actual not in viaje.participantes.all %}
-                <form method="post" action="{% url 'core:unirse_a_viaje' viaje.id %}" class="inline-form">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-ghost">
-                    Unirme
-                  </button>
-                </form>
-              {% else %}
-                <span class="badge badge-muted">
-                  ✓ Participando
-                </span>
-              {% endif %}
-            {% else %}
-              <a href="{% url 'core:login' %}" class="btn btn-ghost">
-                Unirme
-              </a>
-            {% endif %}
-          </footer>
-        </article>
-      {% endfor %}
+          <button type="submit" class="btn btn-primary btn-filtrar">Filtrar</button>
+        </div>
+      </form>
     </div>
-  {% else %}
-    <p>No hay viajes públicos por ahora.</p>
-  {% endif %}
+
+    <script>
+      function updatePriceValue() {
+        const slider = document.getElementById('precio_max');
+        const valueDisplay = document.getElementById('precio_value');
+        if (slider && valueDisplay) {
+          valueDisplay.textContent = slider.value + ' €';
+        }
+      }
+    </script>
+
+    <!-- Mostrar los viajes -->
+    <div class="trip-grid-cards">
+      {% if viajes %}
+        {% for viaje in viajes %}
+          <article class="trip-card">
+            <header class="trip-card-header">
+              <h2 class="trip-title">
+                <a href="{% url 'core:detalle_viaje' viaje.id %}">
+                  {{ viaje.ciudad_destino }} ({{ viaje.pais_destino }})
+                </a>
+              </h2>
+
+              <div class="trip-badges">
+                <span class="badge badge-estado">{{ viaje.get_estado_viaje_display }}</span>
+                <span class="badge badge-publico">Público</span>
+              </div>
+            </header>
+
+            <div class="trip-meta">
+              <div class="trip-meta-row">
+                <span class="trip-meta-label">Fechas: </span>
+                <span class="trip-meta-value">
+                  {{ viaje.fecha_ida|date:"d M Y" }} → {{ viaje.fecha_vuelta|date:"d M Y" }}
+                </span>
+              </div>
+
+              <div class="trip-meta-row">
+                <span class="trip-meta-label">Precio: </span>
+                <span class="trip-price">
+                  {{ viaje.precio_persona }} € <span class="trip-price-suffix">/ persona</span>
+                </span>
+              </div>
+
+              <div class="trip-meta-row">
+                <span class="trip-meta-label">Creador: </span>
+                <span class="trip-meta-value">
+                  {{ viaje.creador.nombre }} {{ viaje.creador.apellidos }}
+                  <span class="trip-username">@{{ viaje.creador.username }}</span>
+                </span>
+              </div>
+            </div>
+
+            <footer class="trip-card-footer trip-card-actions">
+              <a class="btn btn-ghost" href="{% url 'core:detalle_viaje' viaje.id %}">
+                Ver detalles
+              </a>
+
+              {% if usuario_actual %}
+                {% if usuario_actual not in viaje.participantes.all %}
+                  <form method="post" action="{% url 'core:unirse_a_viaje' viaje.id %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost">
+                      Unirme
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="badge badge-muted">
+                    ✓ Participando
+                  </span>
+                {% endif %}
+              {% else %}
+                <a href="{% url 'core:login' %}" class="btn btn-ghost">
+                  Unirme
+                </a>
+              {% endif %}
+            </footer>
+          </article>
+        {% endfor %}
+      {% else %}
+        <p>No hay viajes públicos por ahora.</p>
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}

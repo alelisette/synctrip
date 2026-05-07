@@ -120,21 +120,39 @@ def login_required_usuario(view_func):
 
 
 # ========= HOME =========
+# views.py
+
+@login_required_usuario
 def home(request):
     usuario_actual = get_usuario_actual(request)
 
-    viajes = (
-        Viaje.objects
-        .filter(visibilidad=Viaje.Visibilidad.PUBLICO)
-        .order_by('-fecha_ida')
-    )
+    # Filtros opcionales
+    pais = request.GET.get('pais', '')
+    ciudad = request.GET.get('ciudad', '')
+    precio_max = request.GET.get('precio_max', None)
+
+    viajes = Viaje.objects.filter(visibilidad=Viaje.Visibilidad.PUBLICO).order_by('-fecha_ida')
+
+    # Filtro por país
+    if pais:
+        viajes = viajes.filter(Q(pais_origen__icontains=pais) | Q(pais_destino__icontains=pais))
+    
+    # Filtro por ciudad
+    if ciudad:
+        viajes = viajes.filter(Q(ciudad_origen__icontains=ciudad) | Q(ciudad_destino__icontains=ciudad))
+    
+    # Filtro por precio máximo
+    if precio_max:
+        try:
+            precio_max = float(precio_max)
+            viajes = viajes.filter(precio_persona__lte=precio_max)
+        except (ValueError, TypeError):
+            pass
 
     return render(request, 'core/home.html', {
         'usuario_actual': usuario_actual,
         'viajes': viajes,
     })
-
-
 
 # ========= VISTAS DE VIAJES =========
 
