@@ -1007,7 +1007,10 @@ def actualizar_itinerario_publico(request, viaje_id):
 
     viaje.itinerario_publico = texto
     viaje.save(update_fields=["itinerario_publico"])
-    messages.success(request, "Itinerario actualizado ✅")
+    if texto:
+        messages.success(request, "Itinerario guardado ✅")
+    else:
+        messages.success(request, "Itinerario eliminado.")
     return redirect("core:detalle_viaje", viaje_id=viaje.id)
 
 

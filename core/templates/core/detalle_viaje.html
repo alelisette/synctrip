@@ -184,12 +184,12 @@
           <form method="post" action="{% url 'core:actualizar_itinerario_publico' viaje.id %}" class="inline-form">
             {% csrf_token %}
             <textarea
-              name="contenido"
+              name="itinerario_publico"
               id="itinerary-textarea"
               class="itinerary-textarea"
               rows="8"
               placeholder="Escribe aquí el plan final (por días, horas, lugares, etc.). Puedes copiar/pegar cosas de SyncBot."
-            >{{ itinerario.contenido }}</textarea>
+            >{{ viaje.itinerario_publico }}</textarea>
 
             <div class="itinerary-actions">
               <button type="submit"
@@ -200,6 +200,19 @@
               </button>
             </div>
           </form>
+
+          {% if viaje.itinerario_publico %}
+          <form method="post"
+                action="{% url 'core:actualizar_itinerario_publico' viaje.id %}"
+                class="inline-form"
+                style="margin-top:.5rem;"
+                onsubmit="return confirm('¿Deseas eliminar este itinerario? Esta acción no se puede deshacer.');">
+            {% csrf_token %}
+            <input type="hidden" name="itinerario_publico" value="">
+            <button type="submit" class="btn btn-danger btn-sm">Eliminar itinerario</button>
+          </form>
+          {% endif %}
+
         {% else %}
           {% if viaje.itinerario_publico %}
             <div class="itinerary-read">
