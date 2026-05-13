@@ -226,22 +226,6 @@ class UsuarioCreateForm(forms.ModelForm):
 
     class Meta:
         model = Usuario
-        fields = ['correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
-
-
-
-class UsuarioCreateForm(forms.ModelForm):
-    contraseña = forms.CharField(
-        label='Contraseña',
-        widget=forms.PasswordInput
-    )
-    fecha_nacimiento = forms.DateField(
-        label='Fecha de nacimiento',
-        widget=forms.DateInput(attrs={'type': 'date'})
-    )
-
-    class Meta:
-        model = Usuario
         fields = ['username', 'correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
 
     def clean_username(self):
@@ -249,6 +233,13 @@ class UsuarioCreateForm(forms.ModelForm):
         if Usuario.objects.filter(username=username).exists():
             raise forms.ValidationError("Ese username ya está en uso.")
         return username
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        usuario.set_password(self.cleaned_data["contraseña"])
+        if commit:
+            usuario.save()
+        return usuario
 
 
 class LoginForm(forms.Form):
@@ -276,27 +267,6 @@ def registro(request):
     })
 
 
-class UsuarioCreateForm(forms.ModelForm):
-    contraseña = forms.CharField(
-        label='Contraseña',
-        widget=forms.PasswordInput
-    )
-    fecha_nacimiento = forms.DateField(
-        label='Fecha de nacimiento',
-        widget=forms.DateInput(attrs={'type': 'date'})
-    )
-
-    class Meta:
-        model = Usuario
-        fields = ['username', 'correo', 'nombre', 'apellidos', 'contraseña', 'fecha_nacimiento']
-
-    def clean_username(self):
-        username = (self.cleaned_data.get("username") or "").strip()
-        if Usuario.objects.filter(username=username).exists():
-            raise forms.ValidationError("Ese username ya está en uso.")
-        return username
-
-
 def login_view(request):
     usuario_actual = get_usuario_actual(request)
     if usuario_actual:
@@ -310,15 +280,15 @@ def login_view(request):
             identificador = form.cleaned_data['identificador'].strip()
             contraseña = form.cleaned_data['contraseña']
 
-            try:
-                usuario = Usuario.objects.get(
-                    (Q(correo=identificador) | Q(username=identificador)) &
-                    Q(contraseña=contraseña)
-                )
+            usuario = Usuario.objects.filter(
+                Q(correo=identificador) | Q(username=identificador)
+            ).first()
+
+            if usuario is not None and usuario.check_password(contraseña):
                 request.session['usuario_id'] = usuario.id
                 return redirect('core:home')
-            except Usuario.DoesNotExist:
-                form.add_error(None, "Credenciales incorrectas.")
+
+            form.add_error(None, "Credenciales incorrectas.")
     else:
         form = LoginForm()
 

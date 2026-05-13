@@ -18,7 +18,7 @@ class UsuarioUpdateForm(forms.ModelForm):
         usuario = super().save(commit=False)
         nueva = self.cleaned_data.get("nueva_contraseña")
         if nueva:
-            usuario.contraseña = nueva
+            usuario.set_password(nueva)
         if commit:
             usuario.save()
         return usuario

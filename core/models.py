@@ -1,5 +1,6 @@
 # Create your models here.
 from django.db import models
+from django.contrib.auth.hashers import check_password, make_password
 
 
 class Usuario(models.Model):
@@ -11,12 +12,15 @@ class Usuario(models.Model):
     contraseña = models.CharField(max_length=128)
     fecha_nacimiento = models.DateField()
 
+    def set_password(self, raw_password):
+        self.contraseña = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.contraseña)
+
     def __str__(self):
         return f"{self.username} ({self.correo})"
 
-
-
-from django.db import models
 
 class Viaje(models.Model):
 
