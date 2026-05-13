@@ -122,7 +122,6 @@ def login_required_usuario(view_func):
 # ========= HOME =========
 # views.py
 
-@login_required_usuario
 def home(request):
     usuario_actual = get_usuario_actual(request)
 
@@ -133,14 +132,17 @@ def home(request):
 
     viajes = Viaje.objects.filter(visibilidad=Viaje.Visibilidad.PUBLICO).order_by('-fecha_ida')
 
+    for v in viajes:
+        v.actualizar_estado()
+
     # Filtro por país
     if pais:
         viajes = viajes.filter(Q(pais_origen__icontains=pais) | Q(pais_destino__icontains=pais))
-    
+
     # Filtro por ciudad
     if ciudad:
         viajes = viajes.filter(Q(ciudad_origen__icontains=ciudad) | Q(ciudad_destino__icontains=ciudad))
-    
+
     # Filtro por precio máximo
     if precio_max:
         try:
@@ -168,6 +170,9 @@ def lista_viajes(request):
         .order_by("fecha_ida")
     )
 
+    for v in viajes:
+        v.actualizar_estado()
+
     return render(request, "core/lista_viajes.html", {
         "viajes": viajes,
         "usuario_actual": usuario,
@@ -191,6 +196,7 @@ def detalle_viaje(request, viaje_id):
 
     usuario_actual = get_usuario_actual(request)
     viaje = get_object_or_404(Viaje, id=viaje_id)
+    viaje.actualizar_estado()
     participantes = viaje.participantes.all()
     es_creador = usuario_actual and (viaje.creador_id == usuario_actual.id)
     # ===== Chat de grupo del viaje (opcional) =====
@@ -233,6 +239,22 @@ class UsuarioCreateForm(forms.ModelForm):
         if Usuario.objects.filter(username=username).exists():
             raise forms.ValidationError("Ese username ya está en uso.")
         return username
+
+    def clean_correo(self):
+        correo = (self.cleaned_data.get("correo") or "").strip()
+        if Usuario.objects.filter(correo=correo).exists():
+            raise forms.ValidationError("Este correo electrónico ya está en uso.")
+        return correo
+
+    def clean_fecha_nacimiento(self):
+        from datetime import date
+        fecha = self.cleaned_data.get("fecha_nacimiento")
+        if fecha:
+            hoy = date.today()
+            edad = hoy.year - fecha.year - ((hoy.month, hoy.day) < (fecha.month, fecha.day))
+            if edad < 18:
+                raise forms.ValidationError("Debes tener al menos 18 años para registrarte.")
+        return fecha
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
@@ -391,7 +413,31 @@ class ViajeCreateForm(forms.ModelForm):
             'fecha_vuelta',
             'direccion_encuentro',
             'precio_persona',
-            'estado_viaje',
+            'visibilidad',
+        ]
+
+
+class ViajeEditForm(forms.ModelForm):
+    fecha_ida = forms.DateField(
+        label='Fecha de ida',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    fecha_vuelta = forms.DateField(
+        label='Fecha de vuelta',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
+    class Meta:
+        model = Viaje
+        fields = [
+            'ciudad_origen',
+            'pais_origen',
+            'ciudad_destino',
+            'pais_destino',
+            'fecha_ida',
+            'fecha_vuelta',
+            'direccion_encuentro',
+            'precio_persona',
             'visibilidad',
         ]
 
@@ -423,23 +469,34 @@ def crear_viaje(request):
 def editar_viaje(request, viaje_id):
     usuario = get_usuario_actual(request)
     viaje = get_object_or_404(Viaje, id=viaje_id)
+    viaje.actualizar_estado()
 
     # Solo el creador puede editar
     if viaje.creador_id != usuario.id:
         return redirect('core:detalle_viaje', viaje_id=viaje.id)
 
     if request.method == 'POST':
-        form = ViajeCreateForm(request.POST, instance=viaje)
+        # Acción de cancelar viaje (solo si está PENDIENTE)
+        if request.POST.get('cancelar') == '1':
+            if viaje.estado_viaje == Viaje.EstadoViaje.PROGRAMADO:
+                viaje.estado_viaje = Viaje.EstadoViaje.CANCELADO
+                viaje.save()
+            return redirect('core:detalle_viaje', viaje_id=viaje.id)
+
+        form = ViajeEditForm(request.POST, instance=viaje)
         if form.is_valid():
             form.save()
             return redirect('core:detalle_viaje', viaje_id=viaje.id)
     else:
-        form = ViajeCreateForm(instance=viaje)
+        form = ViajeEditForm(instance=viaje)
+
+    puede_cancelar = viaje.estado_viaje == Viaje.EstadoViaje.PROGRAMADO
 
     return render(request, 'core/editar_viaje.html', {
         'form': form,
         'usuario_actual': usuario,
         'viaje': viaje,
+        'puede_cancelar': puede_cancelar,
     })
 
 
@@ -447,9 +504,15 @@ def editar_viaje(request, viaje_id):
 def eliminar_viaje(request, viaje_id):
     usuario = get_usuario_actual(request)
     viaje = get_object_or_404(Viaje, id=viaje_id)
+    viaje.actualizar_estado()
 
     # Solo el creador puede eliminar
     if viaje.creador_id != usuario.id:
+        return redirect('core:detalle_viaje', viaje_id=viaje.id)
+
+    # No se puede eliminar un viaje en curso
+    if viaje.estado_viaje == Viaje.EstadoViaje.EN_CURSO:
+        messages.error(request, "No es posible eliminar un viaje que se encuentra actualmente en curso.")
         return redirect('core:detalle_viaje', viaje_id=viaje.id)
 
     if request.method == 'POST':
@@ -958,10 +1021,15 @@ def unirse_a_viaje(request, viaje_id):
         return redirect("core:login")
 
     viaje = get_object_or_404(Viaje, id=viaje_id)
+    viaje.actualizar_estado()
 
     # Solo viajes públicos
     if viaje.visibilidad != Viaje.Visibilidad.PUBLICO:
         return redirect("core:home")
+
+    # Solo se puede unir a viajes programados (aún no iniciados)
+    if viaje.estado_viaje != Viaje.EstadoViaje.PROGRAMADO:
+        return redirect("core:detalle_viaje", viaje_id=viaje.id)
 
     # Evitar duplicados
     if not viaje.participantes.filter(id=usuario.id).exists():
@@ -1053,18 +1121,21 @@ def gastos_viaje(request, viaje_id):
     if not asegurar_participante_y_privado(request, viaje, usuario):
         return redirect("core:detalle_viaje", viaje_id=viaje.id)
 
-    gastos = (
+    gastos_qs = (
         Gasto.objects
         .filter(viaje=viaje)
         .select_related("pagador")
         .order_by("-fecha_creacion")
     )
 
+    hay_gastos = gastos_qs.exists()
+
     # ===== Filtros =====
     username = (request.GET.get("username") or "").strip()
     precio_min = (request.GET.get("precio_min") or "").strip().replace(",", ".")
     precio_max = (request.GET.get("precio_max") or "").strip().replace(",", ".")
 
+    gastos = gastos_qs
     if username:
         gastos = gastos.filter(pagador__username__icontains=username)
 
@@ -1080,13 +1151,41 @@ def gastos_viaje(request, viaje_id):
     except Exception:
         messages.error(request, "El precio máximo no es válido.")
 
+    # ===== Balance total e individual =====
+    participantes = list(viaje.participantes.all())
+    total_viaje = Decimal("0.00")
+    totales_pagado = {u.id: Decimal("0.00") for u in participantes}
+    totales_debia = {u.id: Decimal("0.00") for u in participantes}
+
+    for g in Gasto.objects.filter(viaje=viaje):
+        total_viaje += g.importe_total
+        if g.pagador_id in totales_pagado:
+            totales_pagado[g.pagador_id] += g.importe_total
+
+    for s in GastoSplit.objects.filter(gasto__viaje=viaje):
+        if s.usuario_id in totales_debia:
+            totales_debia[s.usuario_id] += s.importe
+
+    balance_individual = [
+        {
+            "usuario": u,
+            "pagado": totales_pagado[u.id],
+            "debe": totales_debia[u.id],
+            "balance": (totales_pagado[u.id] - totales_debia[u.id]).quantize(Decimal("0.01")),
+        }
+        for u in participantes
+    ]
+
     return render(request, "core/gastos_viaje.html", {
         "usuario_actual": usuario,
         "viaje": viaje,
         "gastos": gastos,
+        "hay_gastos": hay_gastos,
         "filtro_username": username,
         "filtro_precio_min": precio_min,
         "filtro_precio_max": precio_max,
+        "total_viaje": total_viaje,
+        "balance_individual": balance_individual,
     })
 
 

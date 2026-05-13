@@ -143,10 +143,15 @@
               </li>
             {% endfor %}
           </ul>
+        {% elif not hay_gastos %}
+          <div class="empty-state">
+            <p><strong>Todavía no se han registrado gastos en el viaje.</strong></p>
+            <p class="muted">Añade el primer gasto usando el formulario de la izquierda.</p>
+          </div>
         {% else %}
           <div class="empty-state">
             <p><strong>No hay gastos con esos filtros.</strong></p>
-            <p class="muted">Prueba a limpiar filtros o añade un nuevo gasto.</p>
+            <p class="muted">Prueba a limpiar los filtros.</p>
           </div>
         {% endif %}
 
@@ -154,5 +159,33 @@
     </section>
 
   </div>
+
+  {% if hay_gastos %}
+  <section class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <h2 class="section-title">Balance del viaje</h2>
+      <p class="section-subtitle">Total gastado: <strong>{{ total_viaje }} €</strong></p>
+    </div>
+    <div class="card-body">
+      <ul class="list-cards">
+        {% for b in balance_individual %}
+          <li class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
+            <span><strong>@{{ b.usuario.username }}</strong>
+              <span class="muted"> — Pagó {{ b.pagado }} € · Le corresponde {{ b.debe }} €</span>
+            </span>
+            <span style="font-weight:600; color:{% if b.balance > 0 %}green{% elif b.balance < 0 %}red{% else %}inherit{% endif %};">
+              {% if b.balance > 0 %}+{% endif %}{{ b.balance }} €
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="muted" style="margin-top:.5rem; font-size:.85rem;">
+        Balance positivo = le deben dinero. Balance negativo = debe dinero.
+        <a href="{% url 'core:balance_viaje' viaje.id %}">Ver liquidación completa →</a>
+      </p>
+    </div>
+  </section>
+  {% endif %}
+
 </div>
 {% endblock %}

@@ -13,5 +13,13 @@
     <button type="submit" class="btn">Guardar cambios</button>
 </form>
 
+{% if puede_cancelar %}
+<form method="post" style="margin-top:1rem;" onsubmit="return confirm('¿Seguro que quieres cancelar este viaje? Esta acción no se puede deshacer.');">
+    {% csrf_token %}
+    <input type="hidden" name="cancelar" value="1">
+    <button type="submit" class="btn btn-danger">Cancelar viaje</button>
+</form>
+{% endif %}
+
 <p><a href="{% url 'core:detalle_viaje' viaje.id %}">← Volver al viaje</a></p>
 {% endblock %}

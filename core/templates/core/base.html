@@ -27,6 +27,15 @@
     </nav>
 </div>
     <div class="container">
+        {% if messages %}
+          <div class="stack" style="margin-bottom:1rem;">
+            {% for m in messages %}
+              <div class="notice {% if 'error' in m.tags %}notice-bad{% else %}notice-ok{% endif %}">
+                {{ m }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
         {% block content %}
         {% endblock %}
     </div>

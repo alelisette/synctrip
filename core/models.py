@@ -1,6 +1,7 @@
 # Create your models here.
 from django.db import models
 from django.contrib.auth.hashers import check_password, make_password
+from datetime import date
 
 
 class Usuario(models.Model):
@@ -80,6 +81,21 @@ class Viaje(models.Model):
 
     itinerario_publico = models.TextField(blank=True, default="")  # NUEVO
 
+
+    def actualizar_estado(self):
+        """Transiciona el estado automáticamente según las fechas. No toca CANCELADO."""
+        if self.estado_viaje == Viaje.EstadoViaje.CANCELADO:
+            return
+        hoy = date.today()
+        if hoy < self.fecha_ida:
+            nuevo = Viaje.EstadoViaje.PROGRAMADO
+        elif self.fecha_ida <= hoy <= self.fecha_vuelta:
+            nuevo = Viaje.EstadoViaje.EN_CURSO
+        else:
+            nuevo = Viaje.EstadoViaje.FINALIZADO
+        if self.estado_viaje != nuevo:
+            self.estado_viaje = nuevo
+            Viaje.objects.filter(pk=self.pk).update(estado_viaje=nuevo)
 
     def __str__(self):
         return (
