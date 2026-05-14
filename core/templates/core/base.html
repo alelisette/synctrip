@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
     {% load static %}
-    <link rel="icon" href="{% static 'core/img/favicon.ico' %}">
+    <link rel="icon" type="image/png" href="{% static 'core/img/logo.png' %}">
     <meta charset="UTF-8">
     <title>{% block title %}SyncTrip{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
@@ -11,12 +11,17 @@
 <body>
     <div class="navbar">
     <div class="brand">
-    <a href="{% url 'core:home' %}">SyncTrip</a>
+      <a href="{% url 'core:home' %}" style="display:flex; align-items:center; gap:.5rem; text-decoration:none;">
+        <img src="{% static 'core/img/logo.png' %}" alt="SyncTrip logo" style="height:36px; width:36px; object-fit:contain;">
+        SyncTrip
+      </a>
     </div>
 
     <nav class="nav-links">
         {% if usuario_actual %}
-            <a href="{% url 'core:lista_viajes' %}"> Mis Viajes</a>
+            <a href="{% url 'core:lista_viajes' %}">Mis Viajes</a>
+            <a href="{% url 'core:solicitudes' %}">Mis solicitudes</a>
+            <a href="{% url 'core:mis_amigos' %}">Mis amigos</a>
             <a href="{% url 'core:crear_viaje' %}">Crear viaje</a>
             <a href="{% url 'core:perfil' %}">Mi perfil</a>
             <a href="{% url 'core:logout' %}" class="nav-logout">Cerrar sesión</a>

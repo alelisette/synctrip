@@ -45,6 +45,7 @@ urlpatterns = [
         name="actualizar_itinerario_publico",
     ),
     path("solicitudes/", views.solicitudes, name="solicitudes"),
+    path("amigos/", views.mis_amigos, name="mis_amigos"),
     path(
         "viajes/<int:viaje_id>/unirme/",
         views.unirse_a_viaje,

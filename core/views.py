@@ -125,35 +125,36 @@ def login_required_usuario(view_func):
 def home(request):
     usuario_actual = get_usuario_actual(request)
 
-    # Filtros opcionales
-    pais = request.GET.get('pais', '')
-    ciudad = request.GET.get('ciudad', '')
-    precio_max = request.GET.get('precio_max', None)
+    pais      = request.GET.get('pais', '')
+    ciudad    = request.GET.get('ciudad', '')
+    precio_max = request.GET.get('precio_max', '7000')
+    estado    = request.GET.get('estado', '')
 
     viajes = Viaje.objects.filter(visibilidad=Viaje.Visibilidad.PUBLICO).order_by('-fecha_ida')
 
     for v in viajes:
         v.actualizar_estado()
 
-    # Filtro por país
     if pais:
         viajes = viajes.filter(Q(pais_origen__icontains=pais) | Q(pais_destino__icontains=pais))
 
-    # Filtro por ciudad
     if ciudad:
         viajes = viajes.filter(Q(ciudad_origen__icontains=ciudad) | Q(ciudad_destino__icontains=ciudad))
 
-    # Filtro por precio máximo
     if precio_max:
         try:
-            precio_max = float(precio_max)
-            viajes = viajes.filter(precio_persona__lte=precio_max)
+            viajes = viajes.filter(precio_persona__lte=float(precio_max))
         except (ValueError, TypeError):
             pass
+
+    if estado:
+        viajes = viajes.filter(estado_viaje=estado)
 
     return render(request, 'core/home.html', {
         'usuario_actual': usuario_actual,
         'viajes': viajes,
+        'precio_max_val': precio_max,
+        'estado_sel': estado,
     })
 
 # ========= VISTAS DE VIAJES =========
@@ -162,6 +163,11 @@ from django.db.models import Q
 @login_required_usuario
 def lista_viajes(request):
     usuario = get_usuario_actual(request)
+
+    pais       = request.GET.get('pais', '')
+    ciudad     = request.GET.get('ciudad', '')
+    estado     = request.GET.get('estado', '')
+    precio_max = request.GET.get('precio_max', '7000')
 
     viajes = (
         Viaje.objects
@@ -173,9 +179,23 @@ def lista_viajes(request):
     for v in viajes:
         v.actualizar_estado()
 
+    if pais:
+        viajes = viajes.filter(Q(pais_origen__icontains=pais) | Q(pais_destino__icontains=pais))
+    if ciudad:
+        viajes = viajes.filter(Q(ciudad_origen__icontains=ciudad) | Q(ciudad_destino__icontains=ciudad))
+    if estado:
+        viajes = viajes.filter(estado_viaje=estado)
+    if precio_max:
+        try:
+            viajes = viajes.filter(precio_persona__lte=float(precio_max))
+        except (ValueError, TypeError):
+            pass
+
     return render(request, "core/lista_viajes.html", {
         "viajes": viajes,
         "usuario_actual": usuario,
+        "precio_max_val": precio_max,
+        "estado_sel": estado,
     })
 
 
@@ -680,6 +700,27 @@ def chat_viaje_historial(request, viaje_id):
 
 # ========= VISTAS DE AMISTAD =========
 
+@login_required_usuario
+def mis_amigos(request):
+    usuario = get_usuario_actual(request)
+    amistades = SolicitudAmistad.objects.filter(
+        estado=SolicitudAmistad.Estado.ACEPTADA
+    ).filter(
+        Q(emisor=usuario) | Q(receptor=usuario)
+    ).select_related("emisor", "receptor")
+
+    amigos = []
+    for sol in amistades:
+        amigo = sol.receptor if sol.emisor_id == usuario.id else sol.emisor
+        amigos.append(amigo)
+
+    amigos.sort(key=lambda u: (u.nombre, u.apellidos))
+
+    return render(request, "core/mis_amigos.html", {
+        "amigos": amigos,
+        "usuario_actual": usuario,
+    })
+
 @require_POST
 @login_required_usuario
 def enviar_solicitud(request):
@@ -690,17 +731,17 @@ def enviar_solicitud(request):
 
     if not username_destino:
         messages.error(request, "Debes escribir un username.")
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     try:
         receptor = Usuario.objects.get(username=username_destino)
     except Usuario.DoesNotExist:
         messages.error(request, "No existe ningún usuario con ese username.")
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     if receptor.id == usuario.id:
         messages.error(request, "No puedes enviarte una solicitud a ti mismo.")
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     obj, created = SolicitudAmistad.objects.get_or_create(
         emisor=usuario,
@@ -713,7 +754,7 @@ def enviar_solicitud(request):
     else:
         messages.success(request, f"Solicitud enviada a @{receptor.username}.")
 
-    return redirect("core:perfil")
+    return redirect("core:solicitudes")
 
 
 @require_POST
@@ -724,15 +765,15 @@ def aceptar_solicitud(request, solicitud_id):
 
     # Solo el receptor puede aceptar
     if sol.receptor_id != usuario.id:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     if sol.estado != SolicitudAmistad.Estado.PENDIENTE:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     sol.estado = SolicitudAmistad.Estado.ACEPTADA
     sol.save()
     messages.success(request, f"Has aceptado a @{sol.emisor.username}.")
-    return redirect("core:perfil")
+    return redirect("core:solicitudes")
 
 
 @require_POST
@@ -743,12 +784,12 @@ def finalizar_solicitud(request, solicitud_id):
 
     # Solo emisor o receptor pueden finalizar/rechazar/cancelar
     if sol.emisor_id != usuario.id and sol.receptor_id != usuario.id:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     sol.estado = SolicitudAmistad.Estado.FINALIZADA
     sol.save()
     messages.info(request, "Solicitud finalizada.")
-    return redirect("core:perfil")
+    return redirect("core:solicitudes")
 
 from django.views.decorators.http import require_POST
 
@@ -799,7 +840,25 @@ def invitar_a_viaje(request, viaje_id):
             "invite_error": "Ese usuario ya está en el viaje."
         })
 
-    # Crear invitación (si ya existe, no duplicar)
+    # Comprobar si son amigos (solicitud ACEPTADA en cualquier dirección)
+    son_amigos = SolicitudAmistad.objects.filter(
+        estado=SolicitudAmistad.Estado.ACEPTADA
+    ).filter(
+        Q(emisor=usuario, receptor=receptor) | Q(emisor=receptor, receptor=usuario)
+    ).exists()
+
+    if son_amigos:
+        # Añadir directamente sin invitación
+        viaje.participantes.add(receptor)
+        return render(request, "core/detalle_viaje.html", {
+            "viaje": viaje,
+            "participantes": viaje.participantes.all(),
+            "usuario_actual": usuario,
+            "es_creador": True,
+            "invite_success": f"@{receptor.username} ha sido añadido directamente al viaje por ser tu amigo."
+        })
+
+    # No son amigos → crear invitación (si ya existe, no duplicar)
     invitacion, created = InvitacionViaje.objects.get_or_create(
         viaje=viaje,
         receptor=receptor,
@@ -832,16 +891,16 @@ def aceptar_invitacion(request, inv_id):
 
     # Solo el receptor puede aceptar
     if invitacion.receptor_id != usuario.id:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     if invitacion.estado != InvitacionViaje.Estado.PENDIENTE:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     invitacion.viaje.participantes.add(usuario)
     invitacion.estado = InvitacionViaje.Estado.ACEPTADA
     invitacion.save()
     messages.success(request, "Invitación aceptada. Ya participas en el viaje.")
-    return redirect("core:perfil")
+    return redirect("core:solicitudes")
 
 
 @require_POST
@@ -852,15 +911,15 @@ def rechazar_invitacion(request, inv_id):
 
     # Solo el receptor puede rechazar
     if invitacion.receptor_id != usuario.id:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     if invitacion.estado != InvitacionViaje.Estado.PENDIENTE:
-        return redirect("core:perfil")
+        return redirect("core:solicitudes")
 
     invitacion.estado = InvitacionViaje.Estado.RECHAZADA
     invitacion.save()
     messages.info(request, "Invitación rechazada.")
-    return redirect("core:perfil")
+    return redirect("core:solicitudes")
 
 
 from django.views.decorators.http import require_POST

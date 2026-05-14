@@ -4,6 +4,48 @@
 
 {% block content %}
 <h1 class="page-title page-title-sm">Mis viajes</h1>
+<p class="muted" style="margin-bottom:1.25rem;">Filtra entre los viajes en los que participas.</p>
+
+<form method="get" action="{% url 'core:lista_viajes' %}" class="searchbar">
+
+  <div class="searchbar-field">
+    <span class="searchbar-label">País</span>
+    <input type="text" name="pais" value="{{ request.GET.pais }}" placeholder="Ej. España" class="searchbar-input">
+  </div>
+
+  <div class="searchbar-divider"></div>
+
+  <div class="searchbar-field">
+    <span class="searchbar-label">Ciudad</span>
+    <input type="text" name="ciudad" value="{{ request.GET.ciudad }}" placeholder="Ej. Madrid" class="searchbar-input">
+  </div>
+
+  <div class="searchbar-divider"></div>
+
+  <div class="searchbar-field">
+    <span class="searchbar-label">Estado</span>
+    <select name="estado" class="searchbar-input searchbar-select">
+      <option value="">Todos</option>
+      <option value="PROGRAMADO" {% if estado_sel == "PROGRAMADO" %}selected{% endif %}>Programado</option>
+      <option value="EN_CURSO"   {% if estado_sel == "EN_CURSO"   %}selected{% endif %}>En curso</option>
+      <option value="FINALIZADO" {% if estado_sel == "FINALIZADO" %}selected{% endif %}>Finalizado</option>
+      <option value="CANCELADO"  {% if estado_sel == "CANCELADO"  %}selected{% endif %}>Cancelado</option>
+    </select>
+  </div>
+
+  <div class="searchbar-divider"></div>
+
+  <div class="searchbar-field searchbar-field--price">
+    <span class="searchbar-label">Precio máx. <strong id="precio_value_mis">{{ precio_max_val }} €</strong></span>
+    <input type="range" name="precio_max" id="precio_max_mis" min="0" max="7000"
+           value="{{ precio_max_val }}" class="searchbar-slider"
+           oninput="document.getElementById('precio_value_mis').textContent = this.value + ' €'">
+  </div>
+
+  <button type="submit" class="searchbar-btn">Buscar</button>
+
+</form>
+
 {% if viajes %}
     <div class="trip-grid-cards">
     {% for viaje in viajes %}
@@ -58,6 +100,6 @@
     {% endfor %}
   </div>
 {% else %}
-  <p>No hay viajes por ahora.</p>
+  <p class="muted">No hay viajes que coincidan con los filtros.</p>
 {% endif %}
 {% endblock %}

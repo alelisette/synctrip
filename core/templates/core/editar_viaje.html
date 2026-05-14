@@ -21,5 +21,7 @@
 </form>
 {% endif %}
 
-<p><a href="{% url 'core:detalle_viaje' viaje.id %}">← Volver al viaje</a></p>
+<div style="margin-top:1.25rem;">
+  <a class="btn btn-ghost" href="{% url 'core:detalle_viaje' viaje.id %}">← Volver al viaje</a>
+</div>
 {% endblock %}

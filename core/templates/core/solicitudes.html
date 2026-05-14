@@ -1,0 +1,125 @@
+{% extends "core/base.html" %}
+{% block title %}Solicitudes - SyncTrip{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="page-head">
+    <h1 class="page-title">Solicitudes</h1>
+    <p class="page-subtitle">Gestiona tus solicitudes de amistad e invitaciones a viajes.</p>
+  </div>
+
+  <!-- ENVIAR SOLICITUD -->
+  <section class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+      <h2 class="section-title">Añadir amigo</h2>
+      <p class="section-subtitle">Busca a un usuario por su username.</p>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'core:enviar_solicitud' %}" class="inline-form" style="display:flex; gap:.75rem; align-items:flex-end;">
+        {% csrf_token %}
+        <div style="flex:1;">
+          <label for="username_destino">Username</label>
+          <input id="username_destino" name="username_destino" type="text" placeholder="Ej: unknown_name" required>
+        </div>
+        <button type="submit" class="btn">Enviar solicitud</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="grid-2">
+
+    <!-- SOLICITUDES RECIBIDAS -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="section-title">Solicitudes de amistad recibidas</h2>
+        <p class="section-subtitle">Pendientes de respuesta.</p>
+      </div>
+      <div class="card-body">
+        {% if solicitudes_recibidas %}
+          <ul class="list-cards">
+            {% for sol in solicitudes_recibidas %}
+              <li class="list-item" style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+                <span><strong>@{{ sol.emisor.username }}</strong> — {{ sol.emisor.nombre }} {{ sol.emisor.apellidos }}</span>
+                <div style="display:flex; gap:.5rem;">
+                  <form method="post" action="{% url 'core:aceptar_solicitud' sol.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm">Aceptar</button>
+                  </form>
+                  <form method="post" action="{% url 'core:finalizar_solicitud' sol.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-ghost">Rechazar</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No tienes solicitudes de amistad pendientes.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- SOLICITUDES ENVIADAS -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="section-title">Solicitudes enviadas</h2>
+        <p class="section-subtitle">Últimas 10 solicitudes.</p>
+      </div>
+      <div class="card-body">
+        {% if solicitudes_enviadas %}
+          <ul class="list-cards">
+            {% for sol in solicitudes_enviadas %}
+              <li class="list-item" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><strong>@{{ sol.receptor.username }}</strong></span>
+                <span class="pill pill-soft">{{ sol.get_estado_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No has enviado solicitudes aún.</p>
+        {% endif %}
+      </div>
+    </section>
+
+  </div>
+
+  <!-- INVITACIONES A VIAJES -->
+  <section class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <h2 class="section-title">Invitaciones a viajes</h2>
+      <p class="section-subtitle">Pendientes de respuesta.</p>
+    </div>
+    <div class="card-body">
+      {% if invitaciones_viaje %}
+        <ul class="list-cards">
+          {% for inv in invitaciones_viaje %}
+            <li class="list-item" style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+              <span>
+                <strong>{{ inv.viaje.ciudad_destino }} ({{ inv.viaje.pais_destino }})</strong>
+                <span class="muted"> — invitado por @{{ inv.emisor.username }}</span>
+                <span class="muted"> · {{ inv.viaje.fecha_ida }} → {{ inv.viaje.fecha_vuelta }}</span>
+              </span>
+              <div style="display:flex; gap:.5rem;">
+                <form method="post" action="{% url 'core:aceptar_invitacion' inv.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm">Aceptar</button>
+                </form>
+                <form method="post" action="{% url 'core:rechazar_invitacion' inv.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-ghost">Rechazar</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No tienes invitaciones a viajes pendientes.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <div style="margin-top:1.25rem;">
+    <a class="btn btn-ghost" href="{% url 'core:perfil' %}">← Volver al perfil</a>
+  </div>
+</div>
+{% endblock %}

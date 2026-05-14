@@ -31,7 +31,7 @@
 *{ box-sizing: border-box; }
 
 html, body{
-  height: 100%;
+  min-height: 100vh;
 }
 
 body{
@@ -41,7 +41,7 @@ body{
   background:
     radial-gradient(1200px 500px at 10% 0%, rgba(37,99,235,.10), transparent 60%),
     radial-gradient(900px 450px at 90% 10%, rgba(99,102,241,.10), transparent 55%),
-    linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #f8fafc 100%);
+    #eef2ff;
 }
 
 a{ color: var(--brand); text-decoration: none; }
@@ -1977,65 +1977,111 @@ body {
   line-height: 1.6;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-/* Filtros - Diseño plano y alineado */
-.filters-container {
-  background: transparent;
-  border: none;
-  padding: 16px 0;
+/* Filtros */
+/* ── Barra de búsqueda / filtros ─────────────────────── */
+.searchbar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid rgba(15,23,42,.12);
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(15,23,42,.08);
+  padding: 6px 6px 6px 10px;
+  gap: 0;
+  width: 100%;
+  box-sizing: border-box;
   margin-bottom: 32px;
-  box-shadow: none;
 }
 
-.filters-form {
-  display: block;
-}
-
-.filters-row {
+.searchbar-field {
   display: flex;
-  gap: 18px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
+  flex-direction: column;
+  padding: 6px 16px;
+  flex: 1 1 0;
   min-width: 0;
+  cursor: text;
+  border-radius: 999px;
+  transition: background .15s;
 }
 
-.filter-group label {
+.searchbar-field:hover { background: #f1f5f9; }
+
+.searchbar-field--price { flex: 1.6 1 0; }
+
+.searchbar-label {
+  font-size: 11px;
   font-weight: 700;
   color: var(--text);
-  font-size: 13px;
-  letter-spacing: 0.3px;
   white-space: nowrap;
-  margin-bottom: 0;
+  letter-spacing: .3px;
 }
 
-.filter-group input {
-  padding: 10px 12px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 10px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.55);
-  color: var(--text);
-  transition: all 0.2s ease;
-  min-width: 180px;
+.searchbar-label strong {
+  color: var(--brand);
+  font-weight: 700;
 }
 
-.filter-group input:focus {
-  border-color: var(--brand);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+.searchbar-input {
+  border: none;
   outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text);
+  padding: 0;
+  width: 100%;
+}
+
+.searchbar-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.searchbar-slider {
+  width: 100%;
+  accent-color: var(--brand);
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.searchbar-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(15,23,42,.1);
+  flex-shrink: 0;
+}
+
+.searchbar-btn {
+  flex-shrink: 0;
+  margin-left: 6px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  white-space: nowrap;
+}
+
+.searchbar-btn:hover {
+  background: #1d4ed8;
+  transform: scale(1.03);
+}
+
+@media (max-width: 720px) {
+  .searchbar {
+    flex-wrap: wrap;
+    border-radius: 18px;
+    padding: 12px;
+    gap: 8px;
+  }
+  .searchbar-field { flex: 1 1 45%; padding: 6px 8px; }
+  .searchbar-field--price { flex: 1 1 100%; }
+  .searchbar-divider { display: none; }
+  .searchbar-btn { width: 100%; text-align: center; margin-left: 0; }
 }
 
 .price-slider-wrapper {
@@ -2112,54 +2158,6 @@ body {
   transform: translateY(0);
 }
 
-/* Responsivo para móvil */
-@media (max-width: 1024px) {
-  .filters-row {
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .filter-group input {
-    min-width: 140px;
-  }
-
-  .price-slider-wrapper {
-    min-width: 200px;
-  }
-}
-
-@media (max-width: 768px) {
-  .filters-container {
-    padding: 16px 0;
-  }
-
-  .filters-row {
-    gap: 12px;
-    flex-direction: column;
-  }
-
-  .filter-group {
-    width: 100%;
-  }
-
-  .filter-group input {
-    min-width: 100%;
-  }
-
-  .btn-filtrar {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .price-slider-wrapper {
-    width: 100%;
-    min-width: 100%;
-  }
-
-  .slider {
-    width: 100%;
-  }
-}
 
 /* Estilos para las tarjetas de los viajes - Mejorado */
 .trip-grid-cards {

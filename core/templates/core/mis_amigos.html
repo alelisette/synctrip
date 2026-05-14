@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% block title %}Mis amigos - SyncTrip{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+  <div class="page-head">
+    <h1 class="page-title">Mis amigos</h1>
+    <p class="page-subtitle">Usuarios con los que tienes amistad aceptada.</p>
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="section-title">Lista de amigos</h2>
+      <p class="section-subtitle">{{ amigos|length }} amigo{% if amigos|length != 1 %}s{% endif %}</p>
+    </div>
+    <div class="card-body">
+      {% if amigos %}
+        <ul class="list-cards">
+          {% for amigo in amigos %}
+            <li class="list-item" style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+              <div>
+                <strong>{{ amigo.nombre }} {{ amigo.apellidos }}</strong>
+                <span class="muted"> · @{{ amigo.username }}</span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Aún no tienes amigos. <a href="{% url 'core:solicitudes' %}">Envía una solicitud de amistad</a>.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <div style="margin-top:1.25rem;">
+    <a class="btn btn-ghost" href="{% url 'core:solicitudes' %}">← Volver a solicitudes</a>
+  </div>
+</div>
+{% endblock %}
